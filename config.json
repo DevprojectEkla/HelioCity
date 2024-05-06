@@ -1,0 +1,10 @@
+{
+  "database": {
+    "dbname": "defi",
+    "user": "ekla",
+    "password": "heliocity",
+    "host": "localhost",
+    "port": "5432"
+  }
+}
+
