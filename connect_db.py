@@ -36,14 +36,4 @@ def connect_to_db(dbname,user,password,host,port):
         exit(1)
 
 
-def print_rows(table_name,cursor):
-    cursor.execute(f"SELECT * FROM {table_name}")
-    rows = cursor.fetchall()
-    if rows:
-        for row in rows:
-            print(row)
-
-    else:
-
-        print('the table is empty')
 

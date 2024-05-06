@@ -1,5 +1,6 @@
 import csv
-from connect_db import connect_to_db, open_config, print_rows
+from connect_db import connect_to_db, open_config
+from utils import close_conn, print_rows,confirm_and_commit
 
 default_table_name = 'meteo_data'
 default_csv_path = "../data/meteo_data.csv"
@@ -40,18 +41,5 @@ with open(csv_file_path,'r') as f:
 # for Debug or double check purpose
 print_rows(table_name,cursor)
 
-commit = input("Do you want to commit? 'y or n'")
-
-if commit.strip() == 'y':
-    conn.commit()
-
-else:
-
-    print("aborting")
-    exit(1)
-
-if conn:
-    if cursor:
-        cursor.close()
-    conn.close()
-
+confirm_and_commit(conn)
+close_conn(conn,cursor)
