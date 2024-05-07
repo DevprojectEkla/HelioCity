@@ -1,19 +1,13 @@
 import csv
 from connect_db import connect_to_db, open_config
-from utils import close_conn, print_rows,confirm_and_commit
+from utils import close_conn, input_source, print_rows,confirm_and_commit
 
-default_table_name = 'meteo_data'
-default_csv_path = "../data/meteo_data.csv"
-
-table_name = input(f"choose a name for this table: "
-                   f"(default:{default_table_name})") or default_table_name
-
-
-csv_file_path = input(f"enter the path to the csv file:"
-                      f"(default {default_csv_path})") or default_csv_path
-
+table_name, csv_file_path, flag = input_source()
 
 dbname, user, password, host, port = open_config()
+
+flag_helio_data = False
+
 
 conn, cursor =  connect_to_db(dbname,user,password,host,port)
 
@@ -21,7 +15,12 @@ with open(csv_file_path,'r') as f:
     reader = csv.reader(f)
     colum_names = next(reader)
 
-    data_types = ['TIMESTAMP'] + ['FLOAT'] * (len(colum_names) - 1)
+    if flag:
+        #DataTypes for the meteo API .csv file
+        data_types = ['TIMESTAMP'] + ['FLOAT'] * (len(colum_names) - 1)
+    else:
+        #Data Types for heliocity_results.csv data file
+        data_types = ['INTEGER'] + ['TIMESTAMP'] + ['INTEGER'] + ['INTEGER']+ ['NULL'] + ['VARCHAR(50)'] + ['FLOAT'] * (len(colum_names) - 6 )
     sql_command = ', '.join(([f'{name} {data_type}' 
                               for name,data_type in zip(colum_names,data_types)])) 
 
