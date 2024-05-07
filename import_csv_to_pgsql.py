@@ -39,7 +39,7 @@ if flag:
     input('continue?')
     create_table_from_dataframe(dataframe, table_name,sql_engine)
 else:
-    for chunk in pd.read_csv(csv_file_path, chunksize=250000):
+    for chunk in pd.read_csv(csv_file_path, chunksize=50000):
         mode = 'replace' if chunk.index[0] == 0 else 'append'
 
         create_table_from_dataframe_in_chunks(chunk,table_name,sql_engine,mode=mode)
