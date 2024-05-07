@@ -1,3 +1,5 @@
+import pandas as pd
+
 def print_rows(table_name,cursor):
     cursor.execute(f"SELECT * FROM {table_name}")
     rows = cursor.fetchall()
@@ -47,5 +49,32 @@ def input_source():
 
     return table_name, csv_file_path, flag_meteo
 
+def create_table_from_dataframe(dataframe,table_name,sql_engine):
+#the insert query schema is replace by pandas to_sql() method
+    try:
+        dataframe.to_sql(table_name,sql_engine, if_exists='replace',index=False)
+        print("Table has been successfully created")
+    except pd.errors.DatabaseError as e:
+        print("Pandas DataFrame to_sql operation failed:",e)
+    except  Exception as e:
+        print("an unexpected error occurred",e)
 
+
+def create_table_from_dataframe_in_chunks(chunk,table_name,sql_engine,mode='append'):
+#the insert query schema is replace by pandas to_sql() method
+    try:
+        if mode == 'replace':
+            print("=== replace mode ====")
+            chunk.to_sql(table_name,sql_engine, if_exists=mode,index=False)
+
+            print("new tab created successfully with first chunk")
+        else:
+            
+            print("=== append mode ====")
+            chunk.to_sql(table_name,sql_engine, if_exists=mode,index=False)
+            print("chunk inserted successfully")
+    except pd.errors.DatabaseError as e:
+        print("Pandas DataFrame to_sql operation failed:",e)
+    except  Exception as e:
+        print("an unexpected error occurred",e)
 

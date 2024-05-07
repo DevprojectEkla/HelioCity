@@ -1,4 +1,5 @@
 import psycopg2
+from sqlalchemy import create_engine
 import json
 
 
@@ -35,5 +36,20 @@ def connect_to_db(dbname,user,password,host,port):
         print("Error connecting to database",e)
         exit(1)
 
-
+def connect_with_alchemy(dbname,user,password,host,port):
+    db_url = f'postgresql://{user}:{password}@{host}:{port}/{dbname}'
+    try:
+    # Create the SQLAlchemy engine
+        engine = create_engine(db_url)
+    
+    # Check if the engine has been created successfully
+        if engine:
+            print("Engine created successfully.")
+            return engine
+        else:
+            print("Failed to create engine.")
+            exit(1)
+    except Exception as e:
+        print("Error occurred while creating engine:", e)
+        exit(1)
 
