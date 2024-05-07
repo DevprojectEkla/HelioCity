@@ -21,14 +21,14 @@ timestamp = 'Date' if flag else 'ts'
 
 data_types = {
     col: (
-        'float16' if col.lower() != 'date' else 'object'
+        'float64' if col.lower() != 'date' else 'object'
     ) if flag else (
         'object' if col.lower() in ['date', 'ts', 'mpp'] else
         'object' if col.startswith('flag_') else
         'object' if pd.isna(col) else
         'Int32' if col.startswith('mpp_int') else
         'string' if col == 'mpp' else
-        'float16'
+        'float64'
     )
     for col in column_names
 }

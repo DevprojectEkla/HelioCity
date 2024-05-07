@@ -79,3 +79,14 @@ def create_table_from_dataframe_in_chunks(chunk,table_name,sql_engine,mode='appe
     except  Exception as e:
         print("an unexpected error occurred",e)
 
+def get_available_tables(engine):
+
+    query = """
+    SELECT table_name
+    FROM information_schema.tables
+    WHERE table_schema = 'public'
+    """
+
+    df_tables = pd.read_sql_query(query, engine)
+
+    return df_tables['table_name'].tolist()

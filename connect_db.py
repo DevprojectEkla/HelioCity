@@ -44,7 +44,7 @@ def connect_with_alchemy(dbname,user,password,host,port):
     
     # Check if the engine has been created successfully
         if engine:
-            print("Engine created successfully.")
+            print("[Debug]: Engine created successfully.")
             return engine
         else:
             print("Failed to create engine.")
