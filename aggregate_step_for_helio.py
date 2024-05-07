@@ -50,3 +50,4 @@ if __name__ == '__main__':
     engine = connect_with_alchemy(dbname, user, password, host, port)
     table_name = input_source(engine)
     create_subtable_step_helio(engine, table_name)
+    engine.dispose()
