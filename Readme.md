@@ -64,11 +64,21 @@ c. une spécification de l'origine des données (météo ou calculateur; le trai
 
 ## D) Prétraitement
 
-lancer simplement la commande:
+### Ajuster le pas des données d'entrées  
+lancer simplement la commande:  
 
-`python aggregate_step_for_helio.py`
+`python aggregate_step_for_helio.py`  
+> **Attention:** Il s'agit d'un simple filtrage des données météo afin de ne garder que les données à intervalle de 15 minutes. Le filtrage est hardcodé à cette valeur mais on pourrait le rendre dynamique. 
 
 suivre les instructions...
+
+## E) Manipulation des données Post et Pré traitement:
+ 
+ ### Sélectionner une plage de valeur pour une champ donné (ex: champ: Date, start: 2023-01-01 end: 2023-01-31)
+
+
+ > **Attention:** Il faut d'abord avoir importé les données .csv dans la base de données avant d'exécuter ce script.  
+ Dans le cas de la table du calculateur, très volumineuse, la commande sql n'est pas optimisée. Il faudrait probablement d'abord la découper en tableaux plus petits. Ceci est encore en chantier...  
 
 `python select_interval.py`
 
