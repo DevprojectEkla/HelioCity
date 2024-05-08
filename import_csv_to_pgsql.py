@@ -1,32 +1,30 @@
 import pandas as pd
-from connect_db import connect_with_alchemy, open_config
-from utils import close_conn, input_source, print_rows,confirm_and_commit, create_table_from_dataframe, create_table_from_dataframe_in_chunks
+from connect_db import conn_alchemy_with_url
+from utils import input_source,  create_table_from_dataframe, create_table_from_dataframe_in_chunks
 
 table_name, csv_file_path, flag = input_source()
 
-dbname, user, password, host, port = open_config()
 
 flag_helio_data = False
 
 
-sql_engine =  connect_with_alchemy(dbname,user,password,host,port)
+sql_engine =  conn_alchemy_with_url()
 
 # read  the first line to get the names of the columns
 dataframe = pd.read_csv(csv_file_path,nrows=1)
 
 # ==== here we cast the columns to the correct data type ===
 column_names = dataframe.columns.to_list()
-data_types = {}
 timestamp = 'Date' if flag else 'ts'
 
 data_types = {
     col: (
         'float64' if col.lower() != 'date' else 'object'
     ) if flag else (
-        'object' if col.lower() in ['date', 'ts', 'mpp'] else
-        'object' if col.startswith('flag_') else
+        'object' if col.lower() in ['date', 'ts'] else
+        'boolean' if col.startswith('flag_') else
         'object' if pd.isna(col) else
-        'Int32' if col.startswith('mpp_int') else
+        'Int16' if col.startswith('mpp_int') else
         'string' if col == 'mpp' else
         'float64'
     )
@@ -34,7 +32,7 @@ data_types = {
 }
 # we read again the entire file this time using a special parser for the date
 if flag:
-    dataframe = pd.read_csv(csv_file_path,parse_dates=[timestamp], dtype=data_types,skiprows=0)
+    dataframe = pd.read_csv(csv_file_path, parse_dates=[timestamp], dtype=data_types,skiprows=0)
     print(dataframe.head(10))
     input('continue?')
     create_table_from_dataframe(dataframe, table_name,sql_engine)

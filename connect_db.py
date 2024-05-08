@@ -2,6 +2,9 @@ import psycopg2
 from sqlalchemy import create_engine
 import json
 
+def get_url():
+    with open('config.json') as fd:
+        return json.load(fd)['database']['url']
 
 def open_config():
     with open('config.json') as fd:
@@ -35,6 +38,21 @@ def connect_to_db(dbname,user,password,host,port):
     
         print("Error connecting to database",e)
         exit(1)
+
+def conn_alchemy_with_url():
+    url = get_url()
+    try:
+        engine = create_engine(url)
+        if engine:
+            print("[Debug]: Engine created successfully.")
+            return engine
+        else:
+            print("Failed to create engine.")
+            exit(1)
+    except Exception as e:
+        print("Error occurred while creating engine:", e)
+        exit(1)
+
 
 def connect_with_alchemy(dbname,user,password,host,port):
     db_url = f'postgresql://{user}:{password}@{host}:{port}/{dbname}'

@@ -1,5 +1,14 @@
 import pandas as pd
 
+def print_with_alchemy(tab, engine):
+    try:
+        df = pd.read_sql(f"SELECT * FROM {tab}", engine)
+        print(df)
+
+    except Exception as e:
+        print("Error while fetching and printing rows with engine",e)
+
+
 def print_rows(table_name,cursor):
     cursor.execute(f"SELECT * FROM {table_name}")
     rows = cursor.fetchall()
@@ -90,3 +99,14 @@ def get_available_tables(engine):
     df_tables = pd.read_sql_query(query, engine)
 
     return df_tables['table_name'].tolist()
+
+
+def count_lines_in_csv_with_pandas(file_path):
+    try:
+        # Use Pandas to read the CSV file without loading it into memory
+        # This allows Pandas to efficiently count the number of lines
+        num_lines = sum(1 for _ in pd.read_csv(file_path, chunksize=1000))
+        return num_lines
+    except Exception as e:
+        print("Error:", e)
+        return None

@@ -1,5 +1,5 @@
 import pandas as pd
-from connect_db import connect_to_db, connect_with_alchemy, open_config
+from connect_db import conn_alchemy_with_url, connect_to_db, connect_with_alchemy, open_config
 from utils import confirm_and_commit, get_available_tables, print_rows
 
 def input_source(engine):
@@ -46,8 +46,7 @@ def create_subtable_step_helio(engine, source_table_name, subtable_name='helio_s
 
 if __name__ == '__main__':
 
-    dbname, user, password, host, port = open_config()
-    engine = connect_with_alchemy(dbname, user, password, host, port)
+    engine = conn_alchemy_with_url() 
     table_name = input_source(engine)
     create_subtable_step_helio(engine, table_name)
     engine.dispose()
