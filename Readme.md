@@ -1,27 +1,46 @@
+
 # Heliocity : défi backend
 
+## Fonctionnalités
 
-1) Le fichier import_csv_to_pgsql.py sert à extraire les données;
+### 1. Le fichier import_csv_to_pgsql.py  
 
-a. de l'API météo en vue du prétraitement   
-b. du calculateur en vue du posttraitement 
+- sert à importer dans une base de données postgresql les données d'un fichiers .csv :
+
+    1. de l'API météo en vue du prétraitement 
+
+    2. du calculateur en vue du posttraitement 
   
+> ### Optimisation de l'importation:
+> Multiprocessing: l'utilisation de la classe Pool() de la librairie multiprocessing permet d'accélérer considérablement l'importation d'un fichier de calculateur.  
+> autres stratégies en cours d'élaboration:  
+> - division en fichiers plus petits
+> - implémentation en un langage bas niveau comme Rust
 
-2) Le fichier aggregate_step_for_helio.py permet de ramener un fichier météo d'un pas de temps de 5 min au pas de temps de 15 min du calculateur (à venir: spécification dynamique du pas de temps initiale et du pas de temps d'arrivée)
+### 2. Le fichier aggregate_step_for_helio.py 
 
-3) Le fichier select_interval.py permet la création d'un sous tableau sql contenant la sélection demandée (plage de temps) généré à partir du tableau original.
+- permet de ramener un fichier météo d'un pas de temps de 5 min au pas de temps de 15 min du calculateur 
+> à venir: spécification dynamique du pas de temps initial et du pas de temps d'arrivée
 
-## A) pré-requis:  
+### 3. Le fichier select_interval.py 
 
-=> indication pour un environnement Linux
+- permet la création d'un sous tableau sql contenant la sélection demandée (plage de temps; température,...) généré à partir du tableau original.
 
-a. un server postgresql configuré et démarré 
+### 4. Le fichier plot_some_data.py
 
-b. la création et la configuration d'une nouvelle base de donnée
+- permet une première visualisation rapide des données importées avec filtrage des valeurs abérrantes.
 
-c. l'édition du fichier config.json avec les paramètres nécessaires en vue de la connexion à la base de donnée.
+## A. pré-requis:  
 
-## B) installation:
+> indication pour un environnement Linux
+
+- un server postgresql configuré et démarré 
+
+- la création et la configuration d'une nouvelle base de donnée
+
+- l'édition du fichier config.json avec les paramètres nécessaires en vue de la connexion à la base de donnée.
+
+## B. installation:
 
 ### Cloner les fichiers depuis le repo git:
 
@@ -44,7 +63,7 @@ c. l'édition du fichier config.json avec les paramètres nécessaires en vue de
 
 `mkdir data`
 
-## C) Importation des données csv vers postgresql 
+## C. Importation des données csv vers postgresql 
 
 ### Lancer le fichier import_csv_to_pgsql.py:
 
@@ -52,17 +71,18 @@ c. l'édition du fichier config.json avec les paramètres nécessaires en vue de
 
 Une série de trois prompts vous demandera:
 
-a. le nom du nouveau tableau à créer
+- le nom du nouveau tableau à créer
 ex: `meteo_data` (c'est la valeur par défaut)
 
-b. le chemin d'accès vers le fichier de données au format .csv
+- le chemin d'accès vers le fichier de données au format .csv
 ex `./data/meteo_data.csv` (c'est la valeur par défaut)
 
-c. une spécification de l'origine des données (météo ou calculateur; le traitement des colonnes est différent dans les deux cas) répondre `'y'` s'il s'agit d'un fichier de données météo. Tout autre réponse traite le cas d'un fichier de calculateur.
+- une spécification de l'origine des données (météo ou calculateur; le traitement des colonnes est différent dans les deux cas) répondre `'y'` s'il s'agit d'un fichier de données météo. Tout autre réponse traite le cas d'un fichier de calculateur.
 
-> **Avertissement:** L'importation des fichiers .csv volumineux provenant du calculateur a lieu par portion de 5*10^4 lignes et peut prendre un temps significatif comparé à l'extraction des données météo qui est quasi instantanée.
+> ~~Avertissement: L'importation des fichiers .csv volumineux provenant du calculateur a lieu par portion de 5*10^4 lignes et peut prendre un temps significatif comparé à l'extraction des données météo qui est quasi instantanée.~~
+> Avec l'utilisation du multiprocessing les portions sont désormais de 500000 lignes (valeur réglables dynamiquement) pour un temps d'exécution divisé par 10
 
-## D) Prétraitement
+## D. Prétraitement
 
 ### Ajuster le pas des données d'entrées  
 lancer simplement la commande:  
@@ -72,7 +92,7 @@ lancer simplement la commande:
 
 suivre les instructions...
 
-## E) Manipulation des données Post et Pré traitement:
+## E. Manipulation des données Post et Pré traitement:
  
  ### Sélectionner une plage de valeur pour une champ donné (ex: champ: Date, start: 2023-01-01 end: 2023-01-31)
 
