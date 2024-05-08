@@ -1,4 +1,9 @@
+import sys
+import time
 import pandas as pd
+
+HIDE_CURSOR = "\033[?25l"
+SHOW_CURSOR = "\033[?25h"
 
 def print_with_alchemy(tab, engine):
     try:
@@ -40,8 +45,8 @@ def close_conn(conn,cursor):
         print("DB Connection closed")
 
 def input_source():
-    default_table_name = 'meteo_data'
-    default_csv_path = "./data/meteo_data.csv"
+    default_table_name = 'helio'
+    default_csv_path = "./data/heliocity_results.csv"
     flag_meteo = False
     table_name = input(f"choose a name for this table: "
                    f"(default:{default_table_name})") or default_table_name
@@ -100,13 +105,12 @@ def get_available_tables(engine):
 
     return df_tables['table_name'].tolist()
 
-
-def count_lines_in_csv_with_pandas(file_path):
-    try:
-        # Use Pandas to read the CSV file without loading it into memory
-        # This allows Pandas to efficiently count the number of lines
-        num_lines = sum(1 for _ in pd.read_csv(file_path, chunksize=1000))
-        return num_lines
-    except Exception as e:
-        print("Error:", e)
-        return None
+def spinner(done_event):
+    spinner_chars = "|/-\\"
+    i = 0
+    while not done_event.is_set():
+        sys.stdout.write(HIDE_CURSOR)
+        print(spinner_chars[i % len(spinner_chars)], end="\r")
+        i += 1
+        time.sleep(0.1)
+    sys.stdout.write(SHOW_CURSOR)
