@@ -1,6 +1,7 @@
 import sys
 import time
 import pandas as pd
+from sqlalchemy import inspect
 
 HIDE_CURSOR = "\033[?25l"
 SHOW_CURSOR = "\033[?25h"
@@ -75,19 +76,11 @@ def create_table_from_dataframe(dataframe,table_name,sql_engine):
         print("an unexpected error occurred",e)
 
 
-def create_table_from_dataframe_in_chunks(chunk,table_name,sql_engine,mode='append'):
+def create_table_from_dataframe_in_chunks(chunk,table_name,sql_engine):
 #the insert query schema is replace by pandas to_sql() method
     try:
-        if mode == 'replace':
-            print("=== replace mode ====")
-            chunk.to_sql(table_name,sql_engine, if_exists=mode,index=False)
-
-            print("new tab created successfully with first chunk")
-        else:
-            
-            print("=== append mode ====")
-            chunk.to_sql(table_name,sql_engine, if_exists=mode,index=False)
-            print("chunk inserted successfully")
+        chunk.to_sql(table_name,sql_engine,index=False,if_exists='replace')
+        print("chunk inserted successfully")
     except pd.errors.DatabaseError as e:
         print("Pandas DataFrame to_sql operation failed:",e)
     except  Exception as e:
