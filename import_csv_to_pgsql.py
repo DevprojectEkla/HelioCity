@@ -49,7 +49,7 @@ class DatabaseHandler:
         dataframe = pd.read_csv(self.csv_file_path)
         create_table_from_dataframe(dataframe, self.table_name, self.sql_engine)
 
-    def write_chunk_to_sql(self,chunk, table_name, sql_engine):
+    def _write_chunk_to_sql(self,chunk, table_name, sql_engine):
         try:
             chunk.to_sql(table_name, sql_engine, if_exists='append', index=False)
         except pd.errors.DatabaseError as e:
@@ -57,22 +57,19 @@ class DatabaseHandler:
 
     def _process_in_chunks(self):
         try:
-            chunksize = input("Enter a chunk size (default is 500000 lines): ") or 500000  
+            chunksize = input("Enter a chunk size (default is 200000 lines): ") or 200000  
             print(chunksize)
             done_event = threading.Event()
             spinner_thread = threading.Thread(target=spinner, args=[done_event])
             spinner_thread.start()
 
-            with Pool() as pool:
                 # inspector = inspect(self.sql_engine)
                 # table_exists = self.table_name in inspector.get_table_names()
-                for i, chunk in enumerate(pd.read_csv(self.csv_file_path, chunksize=int(chunksize),parse_dates=[self.timestamp],dtype=self.dtype)):
-                    print(chunk)
-                    print(f"Processing chunk {i+1} of {chunksize} lines in pool {i+1}")
-                    pool.apply_async(self.write_chunk_to_sql, args=(chunk, self.table_name, self.sql_engine))
-                pool.close()
-                pool.join()
-                print(f"Table successfully created from {self.csv_file_path}")
+            for i, chunk in enumerate(pd.read_csv(self.csv_file_path, chunksize=int(chunksize),parse_dates=[self.timestamp],dtype=self.dtype)):
+                print(chunk)
+                print(f"Processing chunk {i+1} of {chunksize} lines")
+                self._write_chunk_to_sql(chunk, self.table_name, self.sql_engine)
+            print(f"Table successfully created from {self.csv_file_path}")
             done_event.set()  # Signal the spinner thread to stop
             spinner_thread.join()
         except Exception as e:

@@ -12,8 +12,8 @@
     2. du calculateur en vue du posttraitement 
   
 > ### Optimisation de l'importation:
-> Multiprocessing: l'utilisation de la classe Pool() de la librairie multiprocessing permet d'accélérer considérablement l'importation d'un fichier de calculateur.  
-> autres stratégies en cours d'élaboration:  
+> stratégies en cours d'élaboration:  
+> - Multiprocessing: l'utilisation de la classe Pool() de la librairie multiprocessing pourrait permettre d'accélérer considérablement l'importation d'un fichier de calculateur.  
 > - division en fichiers plus petits
 > - implémentation en un langage bas niveau comme Rust
 
@@ -79,8 +79,8 @@ ex `./data/meteo_data.csv` (c'est la valeur par défaut)
 
 - une spécification de l'origine des données (météo ou calculateur; le traitement des colonnes est différent dans les deux cas) répondre `'y'` s'il s'agit d'un fichier de données météo. Tout autre réponse traite le cas d'un fichier de calculateur.
 
-> ~~Avertissement: L'importation des fichiers .csv volumineux provenant du calculateur a lieu par portion de 5*10^4 lignes et peut prendre un temps significatif comparé à l'extraction des données météo qui est quasi instantanée.~~
-> Avec l'utilisation du multiprocessing les portions sont désormais de 500000 lignes (valeur réglables dynamiquement) pour un temps d'exécution divisé par 10
+> Avertissement: L'importation des fichiers .csv volumineux provenant du calculateur a lieu par portion de 200000 lignes (valeur ajustable) et peut prendre un temps significatif comparé à l'extraction des données météo qui est quasi instantanée.
+~~> Avec l'utilisation du multiprocessing les portions sont désormais de 500000 lignes (valeur réglables dynamiquement) pour un temps d'exécution divisé par 10~~
 
 ## D. Prétraitement
 

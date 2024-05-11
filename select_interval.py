@@ -43,12 +43,19 @@ class DatabaseManager:
         except Exception as e:
             print(f"Error fetching available tables: {e}")
 
-    def get_fields_in_table(self):
+    def get_fields_in_table(self,table_name):
         try:
-            query = """
-            SELECT column_name FROM information_schema.column_name
-
+            query = f"""
+            SELECT column_name 
+            FROM information_schema.columns
+            WHERE table_name = N'{table_name}'
             """
+
+            df_columns = pd.read_sql_query(query, self.engine)
+            return df_columns['column_name'].tolist()
+
+        except Exception as e:
+            print("Error while trying getting fields name in the table",e)
 
 if __name__ == "__main__":
     manager = None
@@ -59,6 +66,8 @@ if __name__ == "__main__":
         print(f"Available tables in current database '{manager.dbname}' :\n\n{available_tables}\n")
         original_table_name = input("Choose the table name from which you want to select an interval:\n").strip()
         new_table_name = input("Choose the new table name:\n").strip()
+        fields = manager.get_fields_in_table(original_table_name)
+        print(fields)
         column_name = input("Choose the field to select:\n").strip()
         start = input("Select starting point:\n").strip() 
         end = input("Select ending point:\n").strip()
