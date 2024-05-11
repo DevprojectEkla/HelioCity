@@ -4,7 +4,7 @@ import threading
 import pandas as pd
 
 from connect_db import conn_alchemy_with_url
-from utils import spinner, input_source,  create_table_from_dataframe, create_table_from_dataframe_in_chunks
+from utils import multiprocessing_import, spinner, input_source,  create_table_from_dataframe, create_table_from_dataframe_in_chunks
 
 
 
@@ -28,10 +28,10 @@ data_types = {
         'float64' if col.lower() != 'date' else 'object'
     ) if flag else (
         'object' if col.lower() in ['date', 'ts'] else
-        'boolean' if col.startswith('flag_') else
+        'object' if col.startswith('flag_') else
         'object' if pd.isna(col) else
-        'Int16' if col.startswith('mpp_int') else
-        'string' if col == 'mpp' else
+        'object' if col.startswith('mpp_int') else
+        'object' if col == 'mpp' else
         'float64'
     )
     for col in column_names
@@ -43,20 +43,21 @@ if flag:
     input('continue?')
     create_table_from_dataframe(dataframe, table_name,sql_engine)
 else:
+    pools = []
     try:
         chunksize = input("enter a chunksize:(default is 500000 lines)\n") or 500000
         done_event = threading.Event()
         spinner_thread = threading.Thread(target=spinner,args=[done_event])
         spinner_thread.start()
-        with Pool() as pool:
-            for i, chunk in enumerate(pd.read_csv(csv_file_path, chunksize=chunksize)):
-                mode = 'replace' if chunk.index[0] == 0 else 'append'
-                print(f"importing chunk {i+1} of {chunksize} lines to pool {i+1} ") 
-
-                pool.apply_async(create_table_from_dataframe_in_chunks, args=(chunk,table_name,sql_engine,mode))
-            pool.close()
-            pool.join()
-            print(f"Table successfully created from {csv_file_path}") 
+        with Pool(3) as pool:
+            chunks =pd.read_csv(csv_file_path, chunksize=int(chunksize))
+            for chunk in chunks:
+                result = pool.apply_async(multiprocessing_import,args=(chunk,table_name,'append'))
+                # pools+= [result.get()]
+                print(pools)
+        pool.close()
+        pool.join()
+        print(f"Table successfully created from {csv_file_path}") 
         done_event.set()  # Signal the spinner thread to stop
         spinner_thread.join()
     except Exception as e:

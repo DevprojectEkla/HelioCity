@@ -1,6 +1,9 @@
 import sys
 import time
 import pandas as pd
+from sqlalchemy import NullPool, create_engine
+
+from connect_db import get_url
 
 HIDE_CURSOR = "\033[?25l"
 SHOW_CURSOR = "\033[?25h"
@@ -73,6 +76,20 @@ def create_table_from_dataframe(dataframe,table_name,sql_engine):
         print("Pandas DataFrame to_sql operation failed:",e)
     except  Exception as e:
         print("an unexpected error occurred",e)
+
+def multiprocessing_import(chunk,tab_name,mode='append'):
+    url = get_url()
+    engine = create_engine(url,poolclass=NullPool)
+    engine.dispose()
+    print(chunk)
+    try:
+        print("processing chunk")
+        processed = chunk.to_sql(tab_name,engine, if_exists=mode,index=False)
+        return processed
+        
+    except Exception as e:
+        print(e)
+
 
 
 def create_table_from_dataframe_in_chunks(chunk,table_name,sql_engine,mode='append'):
