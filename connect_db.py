@@ -1,5 +1,5 @@
 import psycopg2
-from sqlalchemy import create_engine
+from sqlalchemy import NullPool, create_engine
 import json
 
 def get_url():
@@ -42,7 +42,7 @@ def connect_to_db(dbname,user,password,host,port):
 def conn_alchemy_with_url():
     url = get_url()
     try:
-        engine = create_engine(url)
+        engine = create_engine(url,poolclass=NullPool)
         if engine:
             print("[Debug]: Engine created successfully.")
             return engine

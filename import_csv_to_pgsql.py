@@ -1,9 +1,11 @@
-from sqlalchemy import inspect,text
-import pandas as pd
 from multiprocessing import Pool
 import threading
-from connect_db import conn_alchemy_with_url
-from utils import spinner,input_source, create_table_from_dataframe, create_table_from_dataframe_in_chunks
+import pandas as pd
+from sqlalchemy import create_engine, NullPool
+from connect_db import conn_alchemy_with_url, get_url
+from utils import spinner,input_source, create_table_from_dataframe
+
+
 
 class DatabaseHandler:
     def __init__(self, table_name, csv_file_path, flag):
@@ -13,7 +15,6 @@ class DatabaseHandler:
         self.sql_engine = conn_alchemy_with_url()
         self.dtype = None# read  the first line to get the names of the columns
         self.timestamp = None
-
 
     def generate_types(self):
         dataframe = pd.read_csv(csv_file_path,nrows=1)
@@ -27,7 +28,7 @@ class DatabaseHandler:
         'float64' if col.lower() != 'date' else 'object'
     ) if self.flag else (
         'object' if col.lower() in ['date', 'ts'] else
-        'boolean' if col.startswith('flag_') else
+        'object' if col.startswith('flag_') else
         'object' if pd.isna(col) else
         'object' if col.startswith('mpp_int') else
         'string' if col == 'mpp' else
@@ -49,11 +50,27 @@ class DatabaseHandler:
         dataframe = pd.read_csv(self.csv_file_path)
         create_table_from_dataframe(dataframe, self.table_name, self.sql_engine)
 
-    def _write_chunk_to_sql(self,chunk, table_name, sql_engine):
+    def _write_chunk_to_sql(self, chunk, table_name, sql_engine):
         try:
             chunk.to_sql(table_name, sql_engine, if_exists='append', index=False)
         except pd.errors.DatabaseError as e:
             print("Pandas DataFrame to_sql operation failed:", e)
+
+    @staticmethod
+    def multiprocessing_import(chunk, tab_name, mode='append'):
+        # We need an engine connection for each process
+        url = get_url()
+        engine = create_engine(url,poolclass=NullPool)
+        engine.dispose()
+        print(chunk)
+        try:
+            print("processing chunk")
+            processed = chunk.to_sql(tab_name,engine, if_exists=mode,index=False)
+            return processed
+        
+        except Exception as e:
+            print(e)
+
 
     def _process_in_chunks(self):
         try:
@@ -65,10 +82,18 @@ class DatabaseHandler:
 
                 # inspector = inspect(self.sql_engine)
                 # table_exists = self.table_name in inspector.get_table_names()
-            for i, chunk in enumerate(pd.read_csv(self.csv_file_path, chunksize=int(chunksize),parse_dates=[self.timestamp],dtype=self.dtype)):
-                print(chunk)
-                print(f"Processing chunk {i+1} of {chunksize} lines")
-                self._write_chunk_to_sql(chunk, self.table_name, self.sql_engine)
+            with Pool(4) as pool:
+                # for i, chunk in enumerate(pd.read_csv(self.csv_file_path, chunksize=int(chunksize),parse_dates=[self.timestamp],dtype=self.dtype)):
+                # print(chunk)
+                # print(f"Processing chunk {i+1} of {chunksize} lines")
+                chunks =pd.read_csv(csv_file_path, chunksize=int(chunksize))
+                for chunk in chunks:
+                    result = pool.apply_async(self.multiprocessing_import,args=(chunk,table_name,'append'))
+                # pools+= [result.get()]
+                    print(result.get())
+            pool.close()
+            pool.join()
+
             print(f"Table successfully created from {self.csv_file_path}")
             done_event.set()  # Signal the spinner thread to stop
             spinner_thread.join()
