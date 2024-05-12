@@ -17,7 +17,7 @@ class DatabaseHandler:
         self.timestamp = None
 
     def generate_types(self):
-        dataframe = pd.read_csv(csv_file_path,nrows=1)
+        dataframe = pd.read_csv(self.csv_file_path,nrows=1)
 
 # ==== here we cast the columns to the correct data type ===
         column_names = dataframe.columns.to_list()
@@ -86,7 +86,7 @@ class DatabaseHandler:
                 # for i, chunk in enumerate(pd.read_csv(self.csv_file_path, chunksize=int(chunksize),parse_dates=[self.timestamp],dtype=self.dtype)):
                 # print(chunk)
                 # print(f"Processing chunk {i+1} of {chunksize} lines")
-                chunks =pd.read_csv(csv_file_path, chunksize=int(chunksize))
+                chunks =pd.read_csv(self.csv_file_path, chunksize=int(chunksize))
                 for chunk in chunks:
                     result = pool.apply_async(self.multiprocessing_import,args=(chunk,table_name,'append'))
                 # pools+= [result.get()]
