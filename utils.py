@@ -48,8 +48,8 @@ def close_conn(conn,cursor):
         print("DB Connection closed")
 
 def input_source():
-    default_table_name = 'helio'
-    default_csv_path = "./data/heliocity_results.csv"
+    default_table_name = 'meteo_data'
+    default_csv_path = "./data/meteo_data.csv"
     flag_meteo = False
     table_name = input(f"choose a name for this table: "
                    f"(default:{default_table_name})") or default_table_name

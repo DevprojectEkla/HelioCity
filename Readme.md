@@ -3,13 +3,15 @@
 
 ## Fonctionnalités
 
-### 1. Le fichier import_csv_to_pgsql.py  
+### 0. Le fichier main.py permet de lancer les tests des différentes fonctionnalités
 
-- sert à importer dans une base de données postgresql les données d'un fichiers .csv :
+### 1. Le fichier database_handler.py avec la classe DatabaseHandler et sa méthode process_csv_file() 
 
-    1. de l'API météo en vue du prétraitement 
+- permet d'importer vers la base de donnée les fichiers .csv :
 
-    2. du calculateur en vue du posttraitement 
+    1. de l'API météo  
+
+    2. du calculateur  
   
 > ### Optimisation de l'importation:
 > stratégies en cours d'élaboration:  
@@ -17,16 +19,14 @@
 > - division en fichiers plus petits
 > - implémentation en un langage bas niveau comme Rust
 
-### 2. Le fichier aggregate_step_for_helio.py 
+### 2. Le fichier database_selector.py et sa classe associée DatabaseSelector et ses différentes méthodes  
 
 - permet de ramener un fichier météo d'un pas de temps de 5 min au pas de temps de 15 min du calculateur 
 > à venir: spécification dynamique du pas de temps initial et du pas de temps d'arrivée
 
-### 3. Le fichier select_interval.py 
-
 - permet la création d'un sous tableau sql contenant la sélection demandée (plage de temps; température,...) généré à partir du tableau original.
 
-### 4. Le fichier plot_some_data.py
+### 3. Le fichier plot_some_data.py
 
 - permet une première visualisation rapide des données importées avec filtrage des valeurs abérrantes.
 
@@ -65,9 +65,9 @@
 
 ## C. Importation des données csv vers postgresql 
 
-### Lancer le fichier import_csv_to_pgsql.py:
+### Lancer le fichier database_handler.py:
 
-`python import_csv_to_pgsql.py`
+`python database_handler.py`
 
 Une série de trois prompts vous demandera:
 

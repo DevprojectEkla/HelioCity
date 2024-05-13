@@ -1,22 +1,75 @@
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 import threading
 import pandas as pd
-from sqlalchemy import create_engine, NullPool
-from connect_db import conn_alchemy_with_url, get_url
+from sqlalchemy import MetaData, Table, create_engine, NullPool
+from sqlalchemy.orm import sessionmaker
+from connect_db import conn_alchemy_with_url, get_url, open_config
 from utils import spinner,input_source, create_table_from_dataframe
 
 
 
 class DatabaseHandler:
-    def __init__(self, table_name, csv_file_path, flag):
+    def __init__(self):
+        self.table_name = '' 
+        self.table = None
+        self.csv_file_path = '' 
+        self.flag = ''
+        self.sql_engine = None 
+        self.session = None
+        self.metadata = None
+        self.dtype = None# read  the first line to get the names of the columns
+        self.timestamp = None
+        self.dbname = ''
+        self.cpu = None
+        
+    def connect(self):
+        try:
+            self.sql_engine = conn_alchemy_with_url()
+            print("Successfully Connected to the database !")
+        except Exception as e:
+            print(f"Failed to connect: {e}")
+
+    def disconnect(self):
+        if self.sql_engine is not None:
+            self.sql_engine.dispose()
+            print("Disconnected from the database.")
+    
+    def init_queries(self):
+
+        self.metadata = MetaData()
+        self.metadata.reflect(bind=self.sql_engine)
+        self.table = Table(self.table_name,self.metadata,autoload=True)
+
+    def make_query(self,column_names):
+        columns = [getattr(self.table.columns,col_name) for col_name in column_names]
+
+        self.session = sessionmaker(bind=self.sql_engine)
+        with self.session() as session:
+            queries = session.query(*columns).all() 
+            session.close()
+        print(queries)
+        return queries
+
+            
+
+    def init_import(self,table_name, csv_file_path, flag):
         self.table_name = table_name
         self.csv_file_path = csv_file_path
         self.flag = flag
-        self.sql_engine = conn_alchemy_with_url()
-        self.dtype = None# read  the first line to get the names of the columns
-        self.timestamp = None
+        self.dbname = open_config()[0]
+        self.cpu = cpu_count()
 
-    def generate_types(self):
+    
+    def process_csv_file(self):
+        # this is the main method to call to import a .csv file into the db
+        self._generate_types()
+        if self.flag:
+            self._process_single_file()
+        else:
+            self._process_in_chunks()
+    
+    
+    def _generate_types(self):
         dataframe = pd.read_csv(self.csv_file_path,nrows=1)
 
 # ==== here we cast the columns to the correct data type ===
@@ -39,13 +92,7 @@ class DatabaseHandler:
         print(self.dtypes,self.timestamp)
         dataframe.to_sql(self.table_name,self.sql_engine,index=False,if_exists='replace')
 
-    def process_csv_file(self):
-        self.generate_types()
-        if self.flag:
-            self._process_single_file()
-        else:
-            self._process_in_chunks()
-
+    
     def _process_single_file(self):
         dataframe = pd.read_csv(self.csv_file_path)
         create_table_from_dataframe(dataframe, self.table_name, self.sql_engine)
@@ -74,7 +121,7 @@ class DatabaseHandler:
 
     def _process_in_chunks(self):
         try:
-            chunksize = input("Enter a chunk size (default is 200000 lines): ") or 200000  
+            chunksize = input("Enter a chunk size (default is 50000 lines): ") or 50000  
             print(chunksize)
             done_event = threading.Event()
             spinner_thread = threading.Thread(target=spinner, args=[done_event])
@@ -82,7 +129,7 @@ class DatabaseHandler:
 
                 # inspector = inspect(self.sql_engine)
                 # table_exists = self.table_name in inspector.get_table_names()
-            with Pool(4) as pool:
+            with Pool(self.cpu) as pool:
                 # for i, chunk in enumerate(pd.read_csv(self.csv_file_path, chunksize=int(chunksize),parse_dates=[self.timestamp],dtype=self.dtype)):
                 # print(chunk)
                 # print(f"Processing chunk {i+1} of {chunksize} lines")
@@ -100,13 +147,16 @@ class DatabaseHandler:
         except Exception as e:
             print("Error in multiprocessing call:", e)
 
-    def close_connection(self):
-        self.sql_engine.dispose()
 
 
 if __name__ == "__main__":
     table_name, csv_file_path, flag = input_source()
-    db_handler = DatabaseHandler(table_name, csv_file_path, flag)
+    db_handler = DatabaseHandler()
+    db_handler.init_import(table_name, csv_file_path, flag)
+    db_handler.connect()
+    # db_handler.init_queries()
+    # db_handler.make_query(['npv_const','nstr_const'])
+    input('process csv?')
     db_handler.process_csv_file()
-    db_handler.close_connection()
+    db_handler.disconnect()
 

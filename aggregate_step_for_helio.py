@@ -1,6 +1,6 @@
 import pandas as pd
-from connect_db import conn_alchemy_with_url, connect_to_db, connect_with_alchemy, open_config
-from utils import confirm_and_commit, get_available_tables, print_rows
+from connect_db import conn_alchemy_with_url
+from utils import get_available_tables 
 
 def input_source(engine):
     default_table_name = 'meteo_data'
@@ -12,12 +12,9 @@ def input_source(engine):
 
 def create_subtable_step_helio(engine, source_table_name, subtable_name='helio_step'):
     # Fetch column names from the source table
-    df_columns = pd.read_sql_query(f"SELECT column_name FROM information_schema.columns WHERE table_name = '{source_table_name}'", engine)
+    df_columns = pd.read_sql_query(f"SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name = '{source_table_name}'", engine)
     columns = df_columns['column_name'].tolist()
-
-    # Grab the column names for the SELECT query, excluding the first column ('Date')
-    value_columns = ", ".join(columns[1:])
-
+    
     # Read the entire source table into a DataFrame
     df = pd.read_sql_query(f"SELECT * FROM {source_table_name}", engine)
 
