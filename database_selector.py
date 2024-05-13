@@ -58,15 +58,17 @@ class DatabaseSelector(DatabaseHandler):
             pass
 
     def _raw_formula(self):
-        self.raw_formula_list = [("Apparent_temp",'CAST((-2.7 * (1 - (rel_humidity / 100)) * (5.0 * SQRT(GREATEST(wind_speed, 0)) - 0.1) + "Temperature") AS numeric(10,2))')]
+        self.insert_column_name = 'Apparent_temp'
+        self.raw_formula_list = [(f"{self.insert_column_name}",'CAST((-2.7 * (1 - (rel_humidity / 100)) * (5.0 * SQRT(GREATEST(wind_speed, 0)) - 0.1) + "Temperature") AS numeric(10,2))')]
 
     def _python_formula(self,arg1,arg2):
+        self.insert_column_name = 'python_calc'
         if arg1 and arg2:
-            value = arg1 * arg2
+            value = round(arg1 * arg2,2)
         else:
             value = None
 
-        return 'python_calc',value
+        return value
 
     def _create_new_column(self,column_name):
 
@@ -104,23 +106,14 @@ class DatabaseSelector(DatabaseHandler):
             self._insert_new_variable(formula_desc)
 
     def insert_variables_from_python_formula(self,columns):
-        self.init_queries()
-        rows = self.make_query(columns)
-        new_values = []
-        create = True
-        for row in rows:
-            new_variable = self._python_formula(row[0],row[1])
-            print(new_variable)
-            new_values.append({new_variable[0]:new_variable[1]})
-            
-        with self.session() as session:
-            session.execute(
-                self.table.update()
-                .where(self.table.c.column_name == new_values[0])  # Adjust column_name to your column name
-                .values({self.table.c.column_name: new_values[1]})  # Adjust column_name to your column name
-            ) 
-            session.commit()
-            session.close()
+        df = pd.read_sql_table(self.table_name, self.sql_engine)
+        values = []
+        for _,row in df.iterrows():
+            value = self._python_formula(row[columns[0]],row[columns[1]])
+            values += [value]
+        df[self.insert_column_name] = values
+        print(f":: Inserting new column :: \ncolumn_name:{self.insert_column_name}\n values: {values[:100]}\n[...]\n{values[-100:]}")
+        df.to_sql(self.table_name,self.sql_engine,if_exists='replace',index=False)
 
     def aggregate_values_to_helio_step(self, subtable_name='helio_step'):
         # Fetch column names from the source table
@@ -158,13 +151,12 @@ if __name__ == "__main__":
 
         
         # test for inserting new variables to the table
-        # manager.init_import('meteo_data','','')
+        manager.init_import('meteo_data','','')
         # manager.aggregate_values_to_helio_step()
         # input("continue test?")
         manager.init_queries()
         manager.make_query(['wind_speed','Date'])
         input('continue?')
-        manager._create_new_column('python_calc')
         manager.insert_variables_from_python_formula(['wind_speed','rel_humidity'])
         # test for the creation of subtables with selected values 
         available_tables = manager.get_available_tables()

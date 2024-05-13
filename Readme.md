@@ -15,7 +15,6 @@
   
 > ### Optimisation de l'importation:
 > stratégies en cours d'élaboration:  
-> - Multiprocessing: l'utilisation de la classe Pool() de la librairie multiprocessing pourrait permettre d'accélérer considérablement l'importation d'un fichier de calculateur.  
 > - division en fichiers plus petits
 > - implémentation en un langage bas niveau comme Rust
 
@@ -77,29 +76,25 @@ ex: `meteo_data` (c'est la valeur par défaut)
 - le chemin d'accès vers le fichier de données au format .csv
 ex `./data/meteo_data.csv` (c'est la valeur par défaut)
 
-- une spécification de l'origine des données (météo ou calculateur; le traitement des colonnes est différent dans les deux cas) répondre `'y'` s'il s'agit d'un fichier de données météo. Tout autre réponse traite le cas d'un fichier de calculateur.
+- une spécification de l'origine des données (météo ou calculateur); le traitement des colonnes du calculateur a lieu par portion ajustable de nombre de lignes) répondre `'y'` s'il s'agit d'un fichier de données peut volumineux et 'n' ou '' dans le cas d'un fichier volumineux.  
+> Avertissement: L'importation des fichiers .csv volumineux provenant du calculateur peut prendre un certain temps selon les capacités mémoire de l'ordinateur. Il est nécessaire d'ajuster la valeur du nombre de lignes par portion à la mémoire disponible. 
 
-> Avertissement: L'importation des fichiers .csv volumineux provenant du calculateur a lieu par portion de 200000 lignes (valeur ajustable) et peut prendre un temps significatif comparé à l'extraction des données météo qui est quasi instantanée.
-~~> Avec l'utilisation du multiprocessing les portions sont désormais de 500000 lignes (valeur réglables dynamiquement) pour un temps d'exécution divisé par 10~~
+## D. Manipulations de données Post et Pré traitement:
 
-## D. Prétraitement
+### La classe DatabaseSelector:  
 
-### Ajuster le pas des données d'entrées  
-lancer simplement la commande:  
-
-`python aggregate_step_for_helio.py`  
-> **Attention:** Il s'agit d'un simple filtrage des données météo afin de ne garder que les données à intervalle de 15 minutes. Le filtrage est hardcodé à cette valeur mais on pourrait le rendre dynamique. 
-
-suivre les instructions...
-
-## E. Manipulation des données Post et Pré traitement:
- 
- ### Sélectionner une plage de valeur pour une champ donné (ex: champ: Date, start: 2023-01-01 end: 2023-01-31)
+Les manipulations de données peuvent être effectuée via la classe DatabaseSelector.  
+Elle permet:  
+    - la création de sous-taleaux par intervalle d'intérêt  
+    - l'aggrégation des données météo au pas du calculateur  
+    - l'insertion de variables calculées à partir des variables d'un tableau existant  
 
 
- > **Attention:** Il faut d'abord avoir importé les données .csv dans la base de données avant d'exécuter ce script.  
- Dans le cas de la table du calculateur, très volumineuse, la commande sql n'est pas optimisée. Il faudrait probablement d'abord la découper en tableaux plus petits. Ceci est encore en chantier...  
+pour un test lancer simplement la commande:  
 
-`python select_interval.py`
+`python database_selector.py`
 
 suivre les instructions...
+
+
+

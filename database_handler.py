@@ -38,7 +38,7 @@ class DatabaseHandler:
 
         self.metadata = MetaData()
         self.metadata.reflect(bind=self.sql_engine)
-        self.table = Table(self.table_name,self.metadata,autoload=True)
+        self.table = Table(self.table_name,self.metadata)
 
     def make_query(self,column_names):
         columns = [getattr(self.table.columns,col_name) for col_name in column_names]
