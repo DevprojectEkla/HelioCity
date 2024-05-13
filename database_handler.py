@@ -27,7 +27,7 @@ class DatabaseHandler:
         self.sql_engine = None 
         self.session = None
         self.metadata = None
-        self.dtype = None# read  the first line to get the names of the columns
+        self.dtype = None
         self.timestamp = None
         self.dbname = ''
         self._cpu = None
@@ -175,7 +175,7 @@ class DatabaseHandler:
     def _process_in_chunks(self):
         try:
             chunksize = input(
-                    "Enter a chunk size (default is 50000 lines): ") or 50000  
+                    "Enter a chunk size (default is 500 lines): ") or 500  
             print(chunksize)
             done_event = threading.Event()
             spinner_thread = threading.Thread(target=spinner,
@@ -195,7 +195,9 @@ class DatabaseHandler:
                             self.multiprocessing_import,
                             tab_name=table_name,
                             mode='append')
-                    result = pool.map(filled_multiprocessing,chunks)
+                    result = pool.map_async(filled_multiprocessing,chunks)
+                    results = result.get()
+                    print(results)
                 except Exception as e:
                     print("Error in multiprocessing apply_async function",e)
             pool.close()

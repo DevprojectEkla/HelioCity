@@ -45,7 +45,12 @@ class DatabaseSelector(DatabaseHandler):
         # meteo data. 
         # This feeds the public method insert_variables_from_raw_formula
         self.insert_column_name = 'Apparent_temp'
-        self.raw_formula_list = [(f"{self.insert_column_name}",'CAST((-2.7 * (1 - (rel_humidity / 100)) * (5.0 * SQRT(GREATEST(wind_speed, 0)) - 0.1) + "Temperature") AS numeric(10,2))')]
+        sql_code = """
+        CAST((-2.7 * (1 - (rel_humidity / 100))
+            * (5.0 * SQRT(GREATEST(wind_speed, 0)) - 0.1)
+            + "Temperature") AS numeric(10,2))
+        """
+        self.raw_formula_list = [(f"{self.insert_column_name}",sql_code)]
 
     def _python_formula(self,arg1,arg2):
         # Private method, should not be use directly
@@ -112,12 +117,18 @@ class DatabaseSelector(DatabaseHandler):
             value = self._python_formula(row[columns[0]],row[columns[1]])
             values += [value]
         df[self.insert_column_name] = values
-        print(f":: Inserting new column :: \ncolumn_name:{self.insert_column_name}\n values: {values[:100]}\n[...]\n{values[-100:]}")
-        df.to_sql(self.table_name,self.sql_engine,if_exists='replace',index=False)
+        print(f""":: Inserting new column ::\n
+              column_name:{self.insert_column_name}\n
+              values: {values[:100]}\n[...]\n{values[-100:]}""")
+
+        df.to_sql(self.table_name,
+                  self.sql_engine,
+                  if_exists='replace',
+                  index=False)
 
     def aggregate_values_to_helio_step(self, subtable_name='helio_step'):
         # This method helps aggregating values of a table
-        # containing a row of timestamps to filter data for a step of 15 minutes
+        # containing a row of timestamps to filter data for a step of 15 min
 
         # Fetch column names from the source table
         query =f"""SELECT column_name FROM information_schema.columns
@@ -128,12 +139,15 @@ class DatabaseSelector(DatabaseHandler):
         columns = df_columns['column_name'].tolist()
 
         # Read the entire source table into a DataFrame
-        df = pd.read_sql_query(f"SELECT * FROM {self.table_name}", self.sql_engine)
+        df = pd.read_sql_query(f"SELECT * FROM {self.table_name}",
+                               self.sql_engine)
 
-        # Convert the 'Date' column to datetime and truncate it to the nearest minute
+        # Convert the 'Date' column to datetime and truncate it
+        # to the nearest minute
         df['Date'] = pd.to_datetime(df['Date']).dt.round('min')
 
-        # Filter rows where the minute component of the 'Date' column is in (0, 15, 30, 45)
+        # Filter rows where the minute component of the 'Date' column
+        # is in (0, 15, 30, 45)
         df_filtered = df[df['Date'].dt.minute.isin([0, 15, 30, 45])]
 
         # Select only the 'Date' and value columns
@@ -143,7 +157,8 @@ class DatabaseSelector(DatabaseHandler):
         df_result.sort_values(by='Date', inplace=True)
 
         # Write the result DataFrame to the subtable
-        df_result.to_sql(subtable_name,self.sql_engine, if_exists='replace', index=False)
+        df_result.to_sql(subtable_name,self.sql_engine,
+                         if_exists='replace', index=False)
 
         # Print the rows of the subtable
         print(df_result)
@@ -166,14 +181,17 @@ if __name__ == "__main__":
         # test for the creation of subtables with selected values 
         available_tables = manager.get_available_tables()
         print(f"Available tables in current database '{manager.dbname}' :\n\n{available_tables}\n")
-        original_table_name = input("Choose the table name from which you want to select an interval:\n").strip()
+        original_table_name = input(
+                "Choose the table name from which you want to select an interval:\n").strip()
         new_table_name = input("Choose the new table name:\n").strip()
         fields = manager.get_fields_in_table(original_table_name)
         print(fields)
         column_name = input("Choose the field to select:\n").strip()
         start = input("Select starting point:\n").strip() 
         end = input("Select ending point:\n").strip()
-        manager.select_interval(start, end, column_name, original_table_name, new_table_name)
+        manager.select_interval(start, end,
+                                column_name, original_table_name,
+                                new_table_name)
     except Exception as e:
         print(f"Test failed: {e}")
     finally:
