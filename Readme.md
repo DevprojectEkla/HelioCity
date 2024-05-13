@@ -3,7 +3,7 @@
 
 ## Fonctionnalités
 
-### 0. Le fichier main.py permet de lancer les tests des différentes fonctionnalités
+### 0. Le fichier tests.py permet de lancer les tests des différentes fonctionnalités
 
 ### 1. Le fichier database_handler.py avec la classe DatabaseHandler et sa méthode process_csv_file() 
 

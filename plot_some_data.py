@@ -4,6 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plot
 from connect_db import conn_alchemy_with_url, connect_with_alchemy, open_config
 from database_handler import DatabaseHandler
+import numpy as np
 
 
 
@@ -63,25 +64,28 @@ class JSONGenerator(DatabaseHandler):
     def plot_data(self):
         pass
 
+if __name__ == '__main__':
 
-engine = conn_alchemy_with_url() 
-table_name = 'selected_date'
-x_axis = input("select data to plot for the x-axis:\n").strip() or 'date'
-y_axis = input("select data to plot for the y-axis:\n").strip() or 'temperature'
-z_axis = input("select data to plot for the z-axis:\n").strip() or 'solar_radiation'
-plot_type = input("select a type for the plot:\n").strip() or 'heat'
+    engine = conn_alchemy_with_url() 
+    table_name = 'selected_date'
+    x_axis = input("select data to plot for the x-axis:\n").strip() or 'date'
+    y_axis = input("select data to plot for the y-axis:\n").strip() or 'temperature'
+    z_axis = input("select data to plot for the z-axis:\n").strip() or 'solar_radiation'
+    plot_type = input("select a type for the plot:\n").strip() or 'heat'
 
 # query = f'SELECT "{x_axis}", "{y_axis}" FROM "{table_name}"'
-query = f'SELECT "{x_axis}", "{y_axis}","{z_axis}" FROM "{table_name}"'
+    query = f'SELECT "{x_axis}", "{y_axis}","{z_axis}" FROM "{table_name}"'
 
 # Specify some threshold to generate a filter 
-threshold_max = 401
-threshold_min = 51
+    threshold_max = 401
+    threshold_min = 51
 
 
 
-df = pd.read_sql(query, engine, parse_dates=[x_axis])
-df['date'] = pd.to_datetime(df['date'])
+    df = pd.read_sql(query, engine, parse_dates=[x_axis])
+    df['date'] = pd.to_datetime(df['date'])
+    df['day'] = df['date'].dt.date
+    df['time'] = df['date'].dt.time
 
 # Filter the DataFrame to include only one date per day
 # df_filtered = df.groupby(df['date'].dt.date).first()
@@ -92,19 +96,22 @@ df['date'] = pd.to_datetime(df['date'])
 # filtered_df[x_axis] = filtered_df[x_axis].astype(str)
 # filtered_df.loc[:, x_axis] = filtered_df[x_axis].astype(str)
 
-print(df,df[x_axis],df[y_axis],df[z_axis])
+    print(df,df[x_axis],df[y_axis],df[z_axis])
 
-heatmap_data = df.pivot(index=y_axis, columns=x_axis, values=z_axis)
+    pivot_df = df.pivot_table(index='time', columns='day', values=z_axis, aggfunc='mean')
 
-date_index = pd.to_datetime(heatmap_data.columns)
+    dates = pd.to_datetime(pivot_df.columns)
 
-date_labels = date_index.strftime('%Y-%m-%d')
-date_labels = [date for date in date_labels] 
+    date_labels = dates.strftime('%Y-%m-%d')
+    date_labels = [date for date in date_labels] 
 
-y_values = heatmap_data.index
-print(date_index,y_values)
-n = len(y_values) // 10
-y_labels = [str(value) for value in y_values[::n]]
+    times_labels = df['time']
+    unique_times = np.unique(df['time'].values)
+    times_labels = [time if i == 0 or time != unique_times[i-1] else '' for i, time in enumerate(unique_times)] 
+    # y_values = pivot_df.index
+    # print(dates,y_values)
+    # n = len(y_values) // 10
+    # y_labels = [str(value) for value in y_values[::n]]
 
 
 # data_dict = {
@@ -136,11 +143,16 @@ y_labels = [str(value) for value in y_values[::n]]
 # timestamp = datetime.now().strftime('%d-%m-%y')
 # plot.savefig(f'./graph/{timestamp}_{x_axis}-{y_axis}.pdf')
 # plot.show()
-plot.figure(figsize=(10, 6))
-plot.imshow(heatmap_data, cmap='hot',aspect='auto', interpolation='nearest')
-plot.colorbar(label=z_axis)
-plot.xlabel(x_axis)
-plot.xticks(range(len(date_labels)), date_labels, rotation=0)
-plot.yticks(range(len(y_labels)), y_labels, rotation=0)
-plot.ylabel(y_axis)
-plot.show()
+    plot.figure(figsize=(10, 6))
+    plot.imshow(pivot_df, cmap='hot_r',aspect='auto', interpolation='nearest')
+    plot.colorbar(label=z_axis)
+    plot.xlabel(x_axis)
+    plot.xticks(range(len(date_labels)), date_labels, rotation=0)
+    plot.yticks(range(len(times_labels)), times_labels, rotation=0)
+    plot.ylabel(y_axis)
+    # plot.show()
+    heatmap_data = pivot_df.reset_index().to_dict(orient='records')
+
+# Convert data to JSON
+    heatmap_json = json.dumps(heatmap_data, indent=4)
+    print(heatmap_json)  # Print JSON data

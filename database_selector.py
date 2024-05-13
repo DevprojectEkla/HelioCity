@@ -1,17 +1,24 @@
 from sqlalchemy import text
-from connect_db import open_config,conn_alchemy_with_url
 import pandas as pd
 
 from database_handler import DatabaseHandler
 
 class DatabaseSelector(DatabaseHandler):
+    """ DataBaseSelector herits from DatabaseHandler. It is the main class
+    to manipulate data and perform simple operations on tables like selecting
+    an interval of data, performing a calculation on values of a table and add
+    the new column containing the newly calculated values """
 
     def __init__(self):
         super().__init__()
-        self.raw_formula_list = []
+        self.raw_formula_list = None 
         
 
     def select_interval(self, start, end, column_name, source_table_name, new_table_name):
+        # select an interval of values and create a subtable containing only
+        # the selected values.
+        # The selection criteria consists in a starting point and an ending point
+        # e.g for a Date column: start=2023-12-01 end=2023-12-31
         try:
             select_query = f"""
                 SELECT * INTO {new_table_name}
@@ -26,42 +33,22 @@ class DatabaseSelector(DatabaseHandler):
         except Exception as e:
             print(f"Error in query: {e}")
 
-    def get_available_tables(self):
-        try:
-            query = """
-            SELECT table_name
-            FROM information_schema.tables
-            WHERE table_schema = 'public'
-            """
-            df_tables = pd.read_sql_query(query, self.sql_engine)
-            return df_tables['table_name'].tolist()
-        except Exception as e:
-            print(f"Error fetching available tables: {e}")
-
-    def get_fields_in_table(self,table_name):
-        try:
-            query = f"""
-            SELECT column_name 
-            FROM information_schema.columns
-            WHERE table_name = N'{table_name}'
-            """
-
-            df_columns = pd.read_sql_query(query, self.sql_engine)
-            return df_columns['column_name'].tolist()
-
-        except Exception as e:
-            print("Error while trying getting fields name in the table",e)
-
-    def fetch_all_values(self, column_names):
-        # TODO
-        for column in column_names:
-            pass
-
     def _raw_formula(self):
+        # Private method, should not be used directly.
+        # This is an example of formula that we can feed directly in SQL
+        # to calculate a new variable.
+        # It is hardcoded here to calculate the apparent temperature based on
+        # meteo data. 
+        # This feeds the public method insert_variables_from_raw_formula
         self.insert_column_name = 'Apparent_temp'
         self.raw_formula_list = [(f"{self.insert_column_name}",'CAST((-2.7 * (1 - (rel_humidity / 100)) * (5.0 * SQRT(GREATEST(wind_speed, 0)) - 0.1) + "Temperature") AS numeric(10,2))')]
 
     def _python_formula(self,arg1,arg2):
+        # Private method, should not be use directly
+        # Here we can use python modules and functions to perform more advanced
+        # calculations, this will feed the public method  
+        # insert_variables_from_python_formula() to perform calculation on each
+        # row.
         self.insert_column_name = 'python_calc'
         if arg1 and arg2:
             value = round(arg1 * arg2,2)
@@ -71,6 +58,7 @@ class DatabaseSelector(DatabaseHandler):
         return value
 
     def _create_new_column(self,column_name):
+        # Private method, should not be use directly
 
         statement = f"""
         ALTER TABLE {self.table_name}
@@ -86,6 +74,7 @@ class DatabaseSelector(DatabaseHandler):
             print("Error:",e)
 
     def _insert_new_variable(self, formula_desc):
+        # Private method, should not be use directly
         col_name, formula = formula_desc
         statement = f"""
         UPDATE {self.table_name}
@@ -100,12 +89,19 @@ class DatabaseSelector(DatabaseHandler):
             print("Error in inserting new variable:",e)
     
     def insert_variables_from_raw_formula(self):
+        # This is the public method to create the column of a new variable
+        # using raw SQL formula
+        # perform calculation and add the column to the selected table
         self._raw_formula()
         for formula_desc in self.raw_formula_list:
             self._create_new_column(formula_desc[0])
             self._insert_new_variable(formula_desc)
 
     def insert_variables_from_python_formula(self,columns):
+        # This is the public method to create the column of a new variable
+        # perform calculation with Python modules or advanced features
+        # and add the column to the selected table
+
         df = pd.read_sql_table(self.table_name, self.sql_engine)
         values = []
         for _,row in df.iterrows():
@@ -116,8 +112,14 @@ class DatabaseSelector(DatabaseHandler):
         df.to_sql(self.table_name,self.sql_engine,if_exists='replace',index=False)
 
     def aggregate_values_to_helio_step(self, subtable_name='helio_step'):
+        # This method helps aggregating values of a table
+        # containing a row of timestamps to filter data for a step of 15 minutes
+
         # Fetch column names from the source table
-        query =f"SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name = '{self.table_name}'" 
+        query =f"""SELECT column_name FROM information_schema.columns
+        WHERE table_schema='public'
+        AND table_name = '{self.table_name}'""" 
+        # Launch the query with pandas and SQL_alchemy engine
         df_columns = pd.read_sql_query(query, self.sql_engine)
         columns = df_columns['column_name'].tolist()
 
@@ -144,12 +146,11 @@ class DatabaseSelector(DatabaseHandler):
 
 
 if __name__ == "__main__":
+    # test de la classe et de ses principales méthodes
     manager = None
     try:
         manager = DatabaseSelector()
         manager.connect()
-
-        
         # test for inserting new variables to the table
         manager.init_import('meteo_data','','')
         # manager.aggregate_values_to_helio_step()
