@@ -1,3 +1,5 @@
+from functools import partial
+import sys
 from multiprocessing import Pool, cpu_count
 import threading
 import pandas as pd
@@ -62,10 +64,12 @@ class DatabaseHandler:
         # this method requires to launch init_queries first but can handle 
         # the case if that was not done.
         if self.table is not None:
-            columns = [getattr(self.table.columns,col_name) for col_name in column_names]
+            columns = [getattr(self.table.columns,
+                               col_name) for col_name in column_names]
         else:
             self.init_queries()
-            columns = [getattr(self.table.columns,col_name) for col_name in column_names]
+            columns = [getattr(self.table.columns,
+                               col_name) for col_name in column_names]
 
         self.session = sessionmaker(bind=self.sql_engine)
         with self.session() as session:
@@ -118,7 +122,10 @@ class DatabaseHandler:
     for col in column_names
 }
         print(self.dtypes,self.timestamp)
-        self.df.to_sql(self.table_name,self.sql_engine,index=False,if_exists='replace')
+        self.df.to_sql(self.table_name,
+                       self.sql_engine,
+                       index=False,
+                       if_exists='replace')
 
     
     def _process_single_file(self):
@@ -128,7 +135,9 @@ class DatabaseHandler:
 
     def _write_chunk_to_sql(self, chunk, table_name, sql_engine):
         try:
-            chunk.to_sql(table_name, sql_engine, if_exists='append', index=False)
+            chunk.to_sql(table_name, sql_engine,
+                         if_exists='append',
+                         index=False)
         except pd.errors.DatabaseError as e:
             print("Pandas DataFrame to_sql operation failed:", e)
 
@@ -141,8 +150,10 @@ class DatabaseHandler:
         engine.dispose()
         try:
             print("processing chunk")
-            processed = chunk.to_sql(tab_name,engine, if_exists=mode,index=False)
-            print("Chunk added to database:", chunk)
+            processed = chunk.to_sql(tab_name,engine,
+                                     if_exists=mode,
+                                     index=False)
+            print("Chunk added to database:\n", chunk)
             return processed
         
         except Exception as e:
@@ -151,7 +162,9 @@ class DatabaseHandler:
     def create_table_from_dataframe(self):
 #the insert query schema is replace by pandas to_sql() method
         try:
-            self.df.to_sql(self.table_name,self.sql_engine, if_exists='replace',index=False)
+            self.df.to_sql(self.table_name,self.sql_engine,
+                           if_exists='replace',
+                           index=False)
             print("Table has been successfully created")
         except pd.errors.DatabaseError as e:
             print("Pandas DataFrame to_sql operation failed:",e)
@@ -161,23 +174,30 @@ class DatabaseHandler:
 
     def _process_in_chunks(self):
         try:
-            chunksize = input("Enter a chunk size (default is 50000 lines): ") or 50000  
+            chunksize = input(
+                    "Enter a chunk size (default is 50000 lines): ") or 50000  
             print(chunksize)
             done_event = threading.Event()
-            spinner_thread = threading.Thread(target=spinner, args=[done_event])
+            spinner_thread = threading.Thread(target=spinner,
+                                              args=[done_event])
             spinner_thread.start()
 
-                # inspector = inspect(self.sql_engine)
-                # table_exists = self.table_name in inspector.get_table_names()
             with Pool(self._cpu) as pool:
-                # for i, chunk in enumerate(pd.read_csv(self.csv_file_path, chunksize=int(chunksize),parse_dates=[self.timestamp],dtype=self.dtype)):
-                # print(chunk)
-                # print(f"Processing chunk {i+1} of {chunksize} lines")
+                
                 table_name = self.table_name
-                chunks =pd.read_csv(self.csv_file_path, chunksize=int(chunksize))
-                for chunk in chunks:
-                    result = pool.apply_async(self.multiprocessing_import,args=(chunk,table_name,'append'))
-                # pools+= [result.get()]
+                chunks =pd.read_csv(self.csv_file_path,
+                                    chunksize=int(chunksize))
+                try:
+                    # we use partial() from functools lib to fill the parameters
+                    # before passing it to pool.map to which we cannot pass
+                    # a list of args
+                    filled_multiprocessing = partial(
+                            self.multiprocessing_import,
+                            tab_name=table_name,
+                            mode='append')
+                    result = pool.map(filled_multiprocessing,chunks)
+                except Exception as e:
+                    print("Error in multiprocessing apply_async function",e)
             pool.close()
             pool.join()
 
@@ -219,7 +239,16 @@ class DatabaseHandler:
             pass
 
 if __name__ == "__main__":
-    table_name, csv_file_path, flag = input_source()
+    if len(sys.argv) < 2:
+        print("Usage: python script.py <argument>")
+        table_name, csv_file_path, flag = input_source()
+    
+    else:
+        table_name = sys.argv[1]
+        flag = False
+        csv_file_path = sys.argv[2]
+        
+    # Extract the argument from the command line
     db_handler = DatabaseHandler()
     db_handler.flag = True if flag == 'y' else False
     db_handler.init_import(table_name, csv_file_path, flag)

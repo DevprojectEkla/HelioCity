@@ -14,7 +14,8 @@ class DatabaseSelector(DatabaseHandler):
         self.raw_formula_list = None 
         
 
-    def select_interval(self, start, end, column_name, source_table_name, new_table_name):
+    def select_interval(self, start, end, column_name,
+                        source_table_name, new_table_name):
         # select an interval of values and create a subtable containing only
         # the selected values.
         # The selection criteria consists in a starting point and an ending point
@@ -23,13 +24,16 @@ class DatabaseSelector(DatabaseHandler):
             select_query = f"""
                 SELECT * INTO {new_table_name}
                 FROM {source_table_name}
-                WHERE "{column_name}" >= '{start}' AND "{column_name}" <= '{end}'
+                WHERE "{column_name}" >= '{start}'
+                AND "{column_name}" <= '{end}'
             """
             
             with self.sql_engine.connect() as conn:
                 conn.execute(text(select_query))
                 conn.commit()
-                print(f"Interval selected successfully and stored in table '{new_table_name}'.")
+                print(
+                        f"Interval selected successfully and stored in table"
+                        "'{new_table_name}'.")
         except Exception as e:
             print(f"Error in query: {e}")
 
