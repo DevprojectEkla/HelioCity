@@ -1,7 +1,7 @@
 import sys
 import time
 import pandas as pd
-from sqlalchemy import NullPool, create_engine
+from sqlalchemy import Float, NullPool, String, create_engine
 
 from connect_db import get_url
 
@@ -90,6 +90,14 @@ def multiprocessing_import(chunk,tab_name,mode='append'):
     except Exception as e:
         print(e)
 
+def get_data_types(column_name, dtypes):
+        dtype = dtypes.get(column_name.lower(),'object')
+        print(dtype)
+
+        if dtype == 'float64':
+            return Float
+        elif dtype == 'object' or dtype == 'string':
+            return String
 
 
 def create_table_from_dataframe_in_chunks(chunk,table_name,sql_engine):

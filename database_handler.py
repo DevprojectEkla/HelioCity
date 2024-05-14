@@ -1,12 +1,13 @@
 from functools import partial
 import sys
 from multiprocessing import Pool, cpu_count
+from concurrent.futures import ProcessPoolExecutor
 import threading
 import pandas as pd
-from sqlalchemy import MetaData, Table, create_engine, NullPool
+from sqlalchemy import Column, Float, MetaData, String, Table, create_engine, NullPool
 from sqlalchemy.orm import sessionmaker
 from connect_db import conn_alchemy_with_url, get_url, open_config
-from utils import spinner,input_source, create_table_from_dataframe
+from utils import get_data_types, spinner,input_source, create_table_from_dataframe
 
 
 
@@ -17,13 +18,20 @@ class DatabaseHandler:
     A user would typically be asked wether or not the .csv file is large (>1Go)
     or small. We then would have to set the DatabaHandler flag attribute to 
     True for imports of small files and False for larger files.
+    INFO: Since we want to interact with our DB and perform CRUD operations on
+    data stored in the database, SQLAlchemy's Table class provides
+    an object-oriented interface for defining and interacting with database tables.
+    Beware: Don't forget to call .disconnect() once you are done to avoid
+            hanging process.
     """
     def __init__(self):
         self.table_name = '' 
         self.table = None
+        self.columns = None
         self.df = None
         self.csv_file_path = '' 
         self.flag = None 
+        self.chunksize = ''
         self.sql_engine = None 
         self.session = None
         self.metadata = None
@@ -35,8 +43,11 @@ class DatabaseHandler:
     def connect(self):
         # Establish a connection to the database which name and associated 
         # credentials are specified in the config.json file.
-        # We use SQLAlchemy python library wich can be use with pandas lib
-        # conn_alchemy_with_url() is part of the utils module of the project
+        # This method must be call at the very beginning right after
+        # class instantiation.
+        # We use SQLAlchemy python library wich is used in combination with
+        # pandas lib conn_alchemy_with_url() is part of the utils module
+        # of the project
         try:
             self.sql_engine = conn_alchemy_with_url()
             print("Successfully Connected to the database !")
@@ -44,11 +55,46 @@ class DatabaseHandler:
             print(f"Failed to connect: {e}")
 
     def disconnect(self):
-        # Disconnect the SQL engine
+        # Disconnect the SQL engine. This should be called at the end of the
+        # task
         if self.sql_engine is not None:
             self.sql_engine.dispose()
             print("Disconnected from the database.")
+
+    @staticmethod
+    def insert_data(chunk,table):
+        print("Inserting data into the table...")
+        url = get_url()
+        engine = create_engine(url, poolclass=NullPool)
+        engine.dispose()
+
+        with engine.connect() as conn, conn.begin():
+            for _, row in chunk.iterrows():
+                print(row,table)
+                conn.execute(table.insert(), **row)
+                print(chunk)
+                conn.commit()
+        print("Data inserted successfully.")
     
+    def process_table_model(self):
+        self._generate_types()
+        self.create_table_model_from_csv()
+        self.metadata = MetaData()
+        self.chunksize = input("enter chunksize:\n"
+                               "default chunksize is 500") or 500 
+        try:
+            with pd.read_csv(self.csv_file_path,chunksize=int(self.chunksize)) as reader:
+                with ProcessPoolExecutor() as executor:
+                    futures = [executor.submit(self.insert_data,chunk, self.table)
+                               for chunk in reader]
+                    for future in futures:
+                        future.result()
+        except Exception as e:
+            print("An error occured while processing Table model to DB"
+                  "\nERROR:",e)
+
+        
+
     def init_queries(self):
         # We use special Objects from SQLAlchemy lib to create a python
         # object Table and initialize the self.metadata and self.table 
@@ -58,11 +104,13 @@ class DatabaseHandler:
         self.table = Table(self.table_name,self.metadata)
 
     def make_query(self,column_names):
-        # Make a query in the table of the self.table field. It takes one arg
-        # which is a list of string containing the names of the column to query
+        # Make a query in the table of the self.table field. 
+        # It takes one argument which is a list of string containing
+        # the names of the column to query
         # e.g db_handler.make_query(['Date','Temperature'])
         # this method requires to launch init_queries first but can handle 
         # the case if that was not done.
+        self.columns = column_names
         if self.table is not None:
             columns = [getattr(self.table.columns,
                                col_name) for col_name in column_names]
@@ -98,7 +146,6 @@ class DatabaseHandler:
         else:
             self._process_in_chunks()
     
-    
     def _generate_types(self):
         # A private method to set the data types of our table 
         # This should be modified based on the Models of the DB
@@ -126,6 +173,16 @@ class DatabaseHandler:
                        self.sql_engine,
                        index=False,
                        if_exists='replace')
+    @staticmethod
+    def _get_data_types(column_name, dtypes):
+        dtype = dtypes.get(column_name.lower(),'object')
+        print(dtype)
+
+        if dtype == 'float64':
+            return Float
+        elif dtype == 'object' or dtype == 'string':
+            return String
+
 
     
     def _process_single_file(self):
@@ -167,10 +224,23 @@ class DatabaseHandler:
                            index=False)
             print("Table has been successfully created")
         except pd.errors.DatabaseError as e:
-            print("Pandas DataFrame to_sql operation failed:",e)
+            print("Pandas DataFrame to_sql operation failed:", e)
         except  Exception as e:
-            print("an unexpected error occurred",e)
+            print("an unexpected error occurred", e)
 
+    
+    def create_table_model_from_csv(self):
+        self._generate_types()
+        self.metadata = MetaData()
+        df = pd.read_csv(self.csv_file_path,nrows=1)
+
+        columns = [Column(col_name, get_data_types(col_name,self.dtypes)) 
+                  for col_name in df.columns]
+        self.table = Table(table_name, self.metadata, *columns)
+        try:
+           self.metadata.create_all(self.sql_engine)
+        except Exception as e:
+            print("cannot create Table with create_all method\nerror:", e)
 
     def _process_in_chunks(self):
         try:
@@ -199,7 +269,7 @@ class DatabaseHandler:
                     results = result.get()
                     print(results)
                 except Exception as e:
-                    print("Error in multiprocessing apply_async function",e)
+                    print("Error in multiprocessing apply_async function", e)
             pool.close()
             pool.join()
 
@@ -219,7 +289,7 @@ class DatabaseHandler:
             df_tables = pd.read_sql_query(query, self.sql_engine)
             return df_tables['table_name'].tolist()
         except Exception as e:
-            print(f"Error fetching available tables: {e}")
+            print("Error fetching available tables: ", e)
 
     def get_fields_in_table(self,table_name):
         try:
@@ -241,23 +311,35 @@ class DatabaseHandler:
             pass
 
 if __name__ == "__main__":
+    # You can test the file using python database_handler.py 
+    simple_mode = ''
     if len(sys.argv) < 2:
-        print("Usage: python script.py <argument>")
-        table_name, csv_file_path, flag = input_source()
+        print("Usage with arguments: python script.py <table_name> <csv_file_path>")
+        table_name, csv_file_path, simple_mode = input_source()
     
-    else:
+    elif len(sys.argv) <= 3:
         table_name = sys.argv[1]
-        flag = False
         csv_file_path = sys.argv[2]
+        print(":: multiprocessing mode import ::\n"
+              "(add -f for small files and simpler import mode)")
+        if len(sys.argv) == 3:
+            if sys.argv[2] == '-f':
+                print(":: simple import mode activated ::")
+                simple_mode = 'y' 
+    else:
+        print("wrong number of arguments")
+        simple_mode = ''
+        exit(1)
         
     # Extract the argument from the command line
     db_handler = DatabaseHandler()
-    db_handler.flag = True if flag == 'y' else False
-    db_handler.init_import(table_name, csv_file_path, flag)
+    flag = True if simple_mode == 'y' or simple_mode == True else False
     db_handler.connect()
+    db_handler.init_import(table_name, csv_file_path, flag)
     # db_handler.init_queries()
-    # db_handler.make_query(['npv_const','nstr_const'])
+    # db_handler.make_query(['Date','Temperature'])
     input('process csv?')
-    db_handler.process_csv_file()
+    db_handler.process_table_model()
+    # db_handler.process_csv_file()
     db_handler.disconnect()
 
