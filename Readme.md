@@ -80,10 +80,11 @@ Le fichier main.py peut être lancé avec des arguments, si ce n'est pas le cas 
 
 ### type de scénario imaginé:  
 
-- un tableau doit être importé à partir du fichier `./data/meteo_data.csv` en pré-traitement, ou ./data/test_helio.csv en post-traitement.  
+- un tableau doit être importé à partir du fichier `./data/meteo_data.csv` en pré-traitement, ou `./data/test_helio.csv` en post-traitement.  
 - certaines données abbérantes doivent être filtrées et/ou un intervalle de temps doit être spécifié,  
 - une nouvelle variable appelée `python_calc`* doit être insérée dans un tableau pour être représentée en fonction du temps  
-  > &#42; il s'agit dans le scénario du calcul de prétraitement de la température ressentie qui est une fonction de la température, de la vitesse du vent et de l'humidité relative. Dans le scénario de post-traitement la grandeur est un calcul fictif pour les tests (à ajuster avec une formule pertinente).  
+  > &#42; il s'agit dans le scénario du calcul de prétraitement de la température ressentie qui est une fonction de la température, de la vitesse du vent et de l'humidité relative.  
+Dans le scénario de post-traitement la grandeur est un calcul fictif pour les tests (à ajuster avec une formule pertinente).  
 - un fichier `.json` doit ensuite être généré à partir de ces données de prévisualisation en vue d'une utilisation future dans un autre contexte.  
 
 ## D. Utilisation indépendante des différents scripts
