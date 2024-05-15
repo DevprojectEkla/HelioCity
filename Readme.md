@@ -29,7 +29,7 @@
 
 - permet la création de sous tableaux sql contenant la sélection demandée (plage de temps, température,...) généré à partir du tableau original.
 
-### 3. Le fichier json_generator.py et sa classe associée
+### 3. Le fichier `json_generator.py` et sa classe associée `JSONGenerator`
 
 - permet la manipulation des données de la DB en vue de la génération d'un fichier `.json` pour la visualisation
 - permet aussi une prévisualisation des données avec possibilité de filtrage des valeurs abérrantes.

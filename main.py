@@ -56,6 +56,8 @@ def meteo_file_example(manager):
     manager.init_queries()
     manager.make_query(['wind_speed','Date'])
     input('\ncontinue ?\n')
+    #manager.aggregate_values_to_helio_step('adjusted_to_helio_step')
+    #manager.table_name = 'adjusted_to_helio_step'
     manager.select_interval(start=0,end=400,
                             column_name='Temperature',
                             new_table_name='filtered')
