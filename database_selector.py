@@ -33,7 +33,7 @@ class DatabaseSelector(DatabaseHandler):
                 conn.commit()
                 print(
                         f"Interval selected successfully and stored in table"
-                        "'{new_table_name}'.")
+                        f"'{new_table_name}'.")
         except Exception as e:
             print(f"Error in query: {e}")
 

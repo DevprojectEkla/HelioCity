@@ -64,9 +64,9 @@ def test_select_interval():
         manager = DatabaseSelector()
         manager.connect()
         available_tables = manager.get_available_tables()
-        original_table_name = 'meteo_data' 
+        original_table_name = 'test_meteo_import_db' 
         new_table_name = 'test_select_interval' 
-        fields = manager.get_fields_in_table('meteo_data')
+        fields = manager.get_fields_in_table(original_table_name)
         column_name = 'Date' 
         start = '2023-12-01' 
         end = '2024-06-30' 
