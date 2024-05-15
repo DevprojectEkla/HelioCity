@@ -58,9 +58,10 @@ class JSONGenerator(DatabaseHandler):
         # You will have to specify the table name of the table you want to
         # interact with, the columns you want to manipulate and the graph_type
         # (heat, scatter,...)
-        self.timestamp = datetime.now().strftime('%d-%m-%y')
-        self.json_filename = f"./data/{self.timestamp}_{self.x_axis}-{self.y_axis}.json"
+        self.timestamp = datetime.now().strftime('%d-%m-%y_%Hh%M')
         self.columns = columns
+        columns_name = "-".join(columns)
+        self.json_filename = f"./data/{self.timestamp}_{self.table_name}_{graph_type}_{columns_name}.json"
         if len(self.columns) >= 2:
             self.x_axis, self.y_axis = self.columns[:2]
             if len(self.columns) == 3:

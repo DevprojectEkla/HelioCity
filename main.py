@@ -9,9 +9,7 @@ from json_generator import JSONGenerator
 from utils import input_source
 
 def main(table_name, csv_file_path='', flag=False):
-    manager = DatabaseSelector()
-    manager.connect()
-    manager.init_import(table_name,csv_file_path,flag)
+    manager = DatabaseSelector.new(table_name, csv_file_path, flag)
     if csv_file_path != '':
         manager.process_csv_file()
     if not table_name in manager.get_available_tables() and csv_file_path == '':
@@ -19,9 +17,42 @@ def main(table_name, csv_file_path='', flag=False):
         print("You need to choose an existing table name or to choose a path to a valid .csv file")
         manager.disconnect()
         exit(1)
-        
+    if 'meteo' in table_name or 'meteo' in csv_file_path:
+        print(":: Running meteo file example ::")
+        meteo_file_example(manager)
+    else:
+        print(":: Running helio file example ::")
+
+        helio_file_example(manager)
     # manager.aggregate_values_to_helio_step()
-    # input("continue test?")
+     
+def helio_file_example(manager):
+    manager.init_queries()
+    manager.make_query(['ts','ei','edc_sim','tpv_sim'])
+    input('\ncontinue ?\n')
+    manager.select_scope('mpp','mpp-25-4','selected_scope')
+    manager.table_name = 'selected_scope'
+    manager.order_table_by('pos','sorted')
+    manager.table_name = 'sorted'
+    filtered_and_sorted = manager.table_name
+    manager.insert_variables_from_python_formula(['ei','edc_sim',
+                                                  'tpv_sim'])
+    manager.disconnect()
+
+    json_generator = JSONGenerator()
+    json_generator.connect()
+    json_generator.table_name = filtered_and_sorted
+    json_generator.init_generator(json_generator.table_name,['ts','python_calc'],'linear')
+    json_generator.display_df()
+    input("continue?")
+    json_generator.plot_data()
+    input("continue?")
+    json_generator.write_data_into_json()
+    json_generator.disconnect()
+
+    
+
+def meteo_file_example(manager):
     manager.init_queries()
     manager.make_query(['wind_speed','Date'])
     input('\ncontinue ?\n')

@@ -13,7 +13,14 @@ class DatabaseSelector(DatabaseHandler):
     def __init__(self):
         super().__init__()
         self.raw_formula_list = None 
-        
+        self.insert_column_name = None
+
+    @classmethod 
+    def new(cls,table_name,csv_file_path,flag):
+        instance = cls() 
+        instance.connect()
+        instance.init_import(table_name,csv_file_path,flag)
+        return instance 
 
     def select_interval(self, start, end, column_name, new_table_name):
         # select an interval of values and create a subtable containing only
@@ -98,13 +105,14 @@ class DatabaseSelector(DatabaseHandler):
         # calculations, this will feed the public method  
         # insert_variables_from_python_formula() to perform calculation on each
         # row.
-        self.insert_column_name = 'python_calc'
         if rel_humidity and wind_speed and temperature:
             result = -2.7 * (1 - (rel_humidity / 100)) * (5.0 * math.sqrt(max(wind_speed, 0)) - 0.1) + temperature
             value = round(result,2)
         else:
-            value = None
-
+            # WARNING: this is to test the helio_example remove this line and
+            # uncomment the other for safety
+            value = temperature + wind_speed + rel_humidity
+            #value = None
         return value
 
     def _create_new_column(self,column_name):
@@ -151,6 +159,7 @@ class DatabaseSelector(DatabaseHandler):
         # This is the public method to create the column of a new variable
         # perform calculation with Python modules or advanced features
         # and add the column to the selected table
+        self.insert_column_name = 'python_calc'
 
         df = pd.read_sql_table(self.table_name, self.sql_engine)
         values = []

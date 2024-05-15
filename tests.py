@@ -108,9 +108,9 @@ def test_json_generator():
         raise RuntimeError(f"Error occurred during {inspect.currentframe().f_code.co_name}") from e
 
 def tests():
-    functions_to_test = [test_import_db_meteo, test_insert_variable,
+    functions_to_test = [test_import_db_meteo,test_import_db_helio_results, test_insert_variable,
                          test_select_scope,test_select_interval,
-                         test_import_db_helio_results,test_aggregate_to_helio_step]
+                         test_aggregate_to_helio_step]
     for i,func in enumerate(functions_to_test):
         try:
             
