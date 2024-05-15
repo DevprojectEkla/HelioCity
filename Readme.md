@@ -1,9 +1,9 @@
 
 # Heliocity : défi backend
 
-## Fonctionnalités
+## Description des diverses fonctionnalités
 
-> ### 0a. Le fichier main.py montre un aperçu d'un scénario possible combinant toutes les fonctionnalités décrites ci-dessous.
+> ### 0a. Le fichier main.py montre un aperçu d'un scénario possible (cf. C. ci-dessous) combinant toutes les fonctionnalités décrites plus bas.
 
 > ### 0b. Le fichier tests.py permet de lancer les tests des différentes fonctionnalités
 
@@ -31,6 +31,8 @@
 
 - permet la manipulation des données de la DB en vue de la génération d'un fichier .json pour la visualisation
 - permet aussi une prévisualisation des données avec possibilité de filtrage des valeurs abérrantes.
+
+# Getting Started
 
 ## A. pré-requis:  
 
@@ -63,30 +65,49 @@
 
 ### (optionnel) Créer un dossier data/ dans lequel vous mettrez vos fichies .csv
 
-`mkdir data`
+`mkdir data`  
 
-## C. Importation des données csv vers postgresql 
+## C.  Exemple de Scénario d'utilisation de nos Classes  
 
-### Lancer le fichier database_handler.py:
+Le fichier main.py peut être lancé avec des arguments, si ce n'est pas le cas une série de prompt demandera:
+    - le nom du tableau (selon le scénario il s'agit d'un nom de tableau existant ou du nom de tableau à créer dans la base de données à partir du fichier à importer)  
+    - si c'est le cas, le nom du fichier .csv que l'on désire importer dans la BD  
+    - éventuellement un flag -f permet de préciser une méthode d'importation simple, l'absence de flag vaut pour une importation utilisant le parallèlisme  
+
+`python main.py [nom_du_tableau] [path_to_csv_file] [-f]`
+
+### type de scénario imaginé:
+
+- un tableau doit être importé à partir du fichier data/meteo_data.csv,
+- certaines données abbérantes doivent être filtré et/ou un intervalle de temps doit être spécifié,
+- une nouvelle variable appelée python_calc* doit être inséré dans un tableau pour être représentée en fonction du temps
+  > * il s'agit dans le scénario du calcul de la température ressentie qui est une fonction de la température, de la vitesse du vent et de l'humidité relative.
+- un fichier .json doit ensuite être généré à partir de ces données de prévisualisation en vue d'une utilisation future dans un autre contexte.
+
+## D. Utilisation indépendante des différents scripts
+
+### Importation des données csv vers postgresql
+
+#### Lancer le fichier database_handler.py:
 
 `python database_handler.py`
 
 Une série de trois prompts vous demandera:
 
-- le nom du nouveau tableau à créer
-ex: `meteo_data` (c'est la valeur par défaut)
+- le nom du nouveau tableau à créer  
+ex: `meteo_data` (c'est la valeur par défaut)  
 
-- le chemin d'accès vers le fichier de données au format .csv
-ex `./data/meteo_data.csv` (c'est la valeur par défaut)
+- le chemin d'accès vers le fichier de données au format .csv  
+ex `./data/meteo_data.csv` (c'est la valeur par défaut)  
 
-- une spécification de l'origine des données (météo ou calculateur); le traitement des colonnes du calculateur a lieu par portion ajustable de nombre de lignes) répondre `'y'` s'il s'agit d'un fichier de données peut volumineux et 'n' ou '' dans le cas d'un fichier volumineux.  
+- une spécification de l'origine des données (météo ou calculateur); le traitement des colonnes du calculateur a lieu par portion ajustable de nombre de lignes) répondre `'y'` s'il s'agit d'un fichier de données peut volumineux et 'n' ou '' dans le cas d'un fichier volumineux.   
 > Avertissement: L'importation des fichiers .csv volumineux provenant du calculateur peut prendre un certain temps selon les capacités mémoire de l'ordinateur. Il est nécessaire d'ajuster la valeur du nombre de lignes par portion à la mémoire disponible. 
 
-## D. Manipulations de données Post et Pré traitement:
+### Manipulations de données Post et Pré traitement:
 
-### La classe DatabaseSelector:  
+#### La classe DatabaseSelector:  
 
-Les manipulations de données peuvent être effectuée via la classe DatabaseSelector.  
+Les manipulations de données peuvent être effectuée via la classe DatabaseSelector pour générer de nouveau tableau dans la base de données.  
 Elle permet:  
     - la création de sous-taleaux par intervalle d'intérêt  
     - l'aggrégation des données météo au pas du calculateur  
@@ -99,5 +120,13 @@ pour un test lancer simplement la commande:
 
 suivre les instructions...
 
+#### La classe JSONGenerator:
+
+Cette classe n'accède qu'en lecture à la base de donnée elle n'y écrit rien. Elle permet de manipuler facilement les données dans des dataframe
+pour une prévisualisation en graph des données à importer en format .json
+
+pour un exemple lancer:
+
+`python json_generator.py`
 
 
