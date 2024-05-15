@@ -34,7 +34,46 @@ class DatabaseSelector(DatabaseHandler):
                 conn.commit()
                 print(
                         f"Interval selected successfully and stored in table"
-                        f"'{new_table_name}'.")
+                        f"' {new_table_name}'.")
+        except Exception as e:
+            print(f"Error in query: {e}")
+
+    def order_table_by(self, column_name, new_table_name):
+    # Order the table by the specified column name and create a new table
+        try:
+            select_query = f"""
+                DROP TABLE IF EXISTS {new_table_name};
+                SELECT * INTO {new_table_name}
+                FROM {self.table_name}
+                ORDER BY "{column_name}"
+            """
+            
+            with self.sql_engine.connect() as conn:
+                conn.execute(text(select_query))
+                conn.commit()
+                print(
+                    f"Table ordered successfully by column '{column_name}' and stored in table '{new_table_name}'."
+                )
+        except Exception as e:
+            print(f"Error in query: {e}")
+    
+    def select_scope(self, column_name, scope, new_table_name):
+    # Select a scope of values and create a new table with it
+        try:
+            select_query = f"""
+                DROP TABLE IF EXISTS {new_table_name};
+                SELECT * INTO {new_table_name}
+                FROM {self.table_name}
+                WHERE "{column_name}" = '{scope}'
+            """
+            
+            with self.sql_engine.connect() as conn:
+                conn.execute(text(select_query))
+                conn.commit()
+                print(
+                    f"Table selected successfully by column '{column_name}' and scope '{scope}';\n"
+                    f"Successfully inserted in table '{new_table_name}'."
+                )
         except Exception as e:
             print(f"Error in query: {e}")
 

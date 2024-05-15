@@ -50,7 +50,9 @@ def test_insert_variable():
         manager.connect()
         # test for inserting new variables to the table
         manager.init_import('test_meteo_import_db','','')
-        manager.insert_variables_from_python_formula(['wind_speed','rel_humidity'])
+        manager.insert_variables_from_python_formula(['Temperature',
+                                                      'wind_speed',
+                                                      'rel_humidity'])
         manager.disconnect()
         return 0
     except Exception as e:
@@ -64,14 +66,33 @@ def test_select_interval():
         manager = DatabaseSelector()
         manager.connect()
         available_tables = manager.get_available_tables()
-        original_table_name = 'test_meteo_import_db' 
+        manager.table_name = 'test_meteo_import_db' 
         new_table_name = 'test_select_interval' 
-        fields = manager.get_fields_in_table(original_table_name)
+        fields = manager.get_fields_in_table(manager.table_name)
         column_name = 'Date' 
         start = '2023-12-01' 
         end = '2024-06-30' 
         manager.select_interval(start, end, column_name,
-                                original_table_name, new_table_name)
+                                new_table_name)
+        manager.disconnect()
+        return 0
+    except Exception as e:
+        traceback.print_exc()
+        raise RuntimeError(f"Error occurred during {inspect.currentframe().f_code.co_name}") from e
+
+def test_select_scope():
+# test for the creation of subtables with selected values 
+    try:
+        manager = DatabaseSelector()
+        manager.connect()
+        available_tables = manager.get_available_tables()
+        manager.table_name = 'test_helio_data_import' 
+        new_table_name = 'test_select_scope' 
+        fields = manager.get_fields_in_table(manager.table_name)
+        column_name = 'mpp' 
+        scope = 'mpp-25-4' 
+        manager.select_scope(column_name,scope,
+                                new_table_name,)
         manager.disconnect()
         return 0
     except Exception as e:
@@ -87,7 +108,8 @@ def test_json_generator():
         raise RuntimeError(f"Error occurred during {inspect.currentframe().f_code.co_name}") from e
 
 def tests():
-    functions_to_test = [test_import_db_meteo, test_insert_variable,test_select_interval,
+    functions_to_test = [test_import_db_meteo, test_insert_variable,
+                         test_select_scope,test_select_interval,
                          test_import_db_helio_results,test_aggregate_to_helio_step]
     for i,func in enumerate(functions_to_test):
         try:

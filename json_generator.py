@@ -109,8 +109,16 @@ class JSONGenerator(DatabaseHandler):
             mask = (self.df[axis] >= min) & (self.df[axis] <= max)
             self.df = self.df[mask]
         except Exception as e:
-            print(f"cannot filter dataframe axis: {axis} with values min:{min}"
+            print(f"cannot filter dataframe axis: {axis} with values min:{min} "
                   f"and max:{max}\nerror:",e)
+
+    def order_df_by(self,column_name):
+        try:
+            self.df= self.df.sort_values(by=column_name)
+        except Exception as e:
+            print(f"Unable to sort the dataframe for column: {column_name} in "
+                  f"table: {self.table_name}")
+
     def _make_pivot(self):
         try:
     

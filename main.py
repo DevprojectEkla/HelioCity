@@ -24,30 +24,33 @@ def main(table_name, csv_file_path='', flag=False):
     # input("continue test?")
     manager.init_queries()
     manager.make_query(['wind_speed','Date'])
-    input('continue?')
+    input('\ncontinue ?\n')
     manager.select_interval(start=0,end=400,
                             column_name='Temperature',
                             new_table_name='filtered')
     manager.select_interval(start=0,end=400,
                             column_name='wind_speed',
                             new_table_name='filtered')
-
+    
     manager.table_name = 'filtered'
+    manager.order_table_by('Date','sorted')
+     
+    manager.table_name = 'sorted'
+    filtered_and_sorted = manager.table_name
     manager.insert_variables_from_python_formula(['Temperature','wind_speed',
                                                   'rel_humidity'])
+    manager.disconnect()
 
     json_generator = JSONGenerator()
     json_generator.connect()
-    json_generator.table_name = 'filtered'
+    json_generator.table_name = filtered_and_sorted
     json_generator.init_generator(json_generator.table_name,['Date','python_calc'],'linear')
-    json_generator.filter_df('Temperature',0,300)
     json_generator.display_df()
-    input("ceratorontinue?")
+    input("continue?")
     json_generator.plot_data()
-    input("ceratorontinue?")
+    input("continue?")
     json_generator.write_data_into_json()
     json_generator.disconnect()
-    manager.disconnect()
 
 if __name__ == '__main__':
     simple_mode = False 
