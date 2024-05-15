@@ -7,7 +7,7 @@
 
 ### 1. Le fichier database_handler.py avec la classe DatabaseHandler et sa méthode process_csv_file() 
 
-- permet d'importer vers la base de donnée les fichiers .csv :
+- permet d'importer vers la base de données les fichiers .csv :
 
     1. de l'API météo  
 
@@ -23,11 +23,12 @@
 - permet de ramener un fichier météo d'un pas de temps de 5 min au pas de temps de 15 min du calculateur 
 > à venir: spécification dynamique du pas de temps initial et du pas de temps d'arrivée
 
-- permet la création d'un sous tableau sql contenant la sélection demandée (plage de temps; température,...) généré à partir du tableau original.
+- permet la création de sous tableaux sql contenant la sélection demandée (plage de temps, température,...) généré à partir du tableau original.
 
-### 3. Le fichier plot_some_data.py
+### 3. Le fichier json_generator.py et sa classe associée
 
-- permet une première visualisation rapide des données importées avec filtrage des valeurs abérrantes.
+- permet la manipulation des données de la DB en vue de la génération d'un fichier .json pour la visualisation
+- permet aussi une prévisualisation des données avec possibilité de filtrage des valeurs abérrantes.
 
 ## A. pré-requis:  
 
@@ -35,9 +36,9 @@
 
 - un server postgresql configuré et démarré 
 
-- la création et la configuration d'une nouvelle base de donnée
+- la création et la configuration d'une nouvelle base de données
 
-- l'édition du fichier config.json avec les paramètres nécessaires en vue de la connexion à la base de donnée.
+- l'édition du fichier config.json avec les paramètres nécessaires en vue de la connexion à la base de données.
 
 ## B. installation:
 

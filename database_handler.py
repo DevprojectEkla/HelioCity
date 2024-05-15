@@ -4,7 +4,7 @@ from multiprocessing import Pool, cpu_count
 from concurrent.futures import ProcessPoolExecutor
 import threading
 import pandas as pd
-from sqlalchemy import Column, Float, MetaData, String, Table, create_engine, NullPool
+from sqlalchemy import Column, Float, MetaData, String, Table, create_engine, NullPool, text
 from sqlalchemy.orm import sessionmaker
 from connect_db import conn_alchemy_with_url, get_url, open_config
 from utils import get_data_types, spinner,input_source, create_table_from_dataframe
@@ -63,32 +63,46 @@ class DatabaseHandler:
 
     @staticmethod
     def insert_data(chunk,table):
+        print("checking for NaN values:\n")
+
+        # Replace NaN values with None
+        chunk.fillna(value=0, inplace=True)
+
         print("Inserting data into the table...")
         url = get_url()
         engine = create_engine(url, poolclass=NullPool)
         engine.dispose()
+        columns = ",".join([f'"{col}"' for col in chunk.columns])
+        values = [f'({",".join([f"{val!r}" if isinstance(val, str) else str(val) for val in row])})' 
+                  for row in chunk.values]        
+        values_str = ",".join(values)
+        insert_query = f"INSERT INTO {table.name} ({columns}) VALUES {values_str};"
 
         with engine.connect() as conn, conn.begin():
-            for _, row in chunk.iterrows():
-                print(row,table)
-                conn.execute(table.insert(), **row)
-                print(chunk)
-                conn.commit()
+            conn.execute(text(insert_query))
+            conn.commit()
+            print("chunk inserted:\n", chunk)
         print("Data inserted successfully.")
     
     def process_table_model(self):
         self._generate_types()
         self.create_table_model_from_csv()
         self.metadata = MetaData()
-        self.chunksize = input("enter chunksize:\n"
-                               "default chunksize is 500") or 500 
+        # self.chunksize = input("enter chunksize:\n"
+                               # "default chunksize is 500") or 500 
+        self.chunksize = 20000
+        table = self.table
+        filled_insert_data = partial(self.insert_data, table=table)
         try:
-            with pd.read_csv(self.csv_file_path,chunksize=int(self.chunksize)) as reader:
-                with ProcessPoolExecutor() as executor:
-                    futures = [executor.submit(self.insert_data,chunk, self.table)
-                               for chunk in reader]
-                    for future in futures:
-                        future.result()
+            with pd.read_csv(self.csv_file_path,chunksize=int(self.chunksize)) as chunks:
+                with Pool() as pool:
+                    # for chunk in chunks:
+
+                   result = pool.map_async(filled_insert_data, chunks)
+                   results = result.get()
+                print(results)
+                pool.join()
+                pool.close()
         except Exception as e:
             print("An error occured while processing Table model to DB"
                   "\nERROR:",e)
