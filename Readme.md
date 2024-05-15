@@ -16,7 +16,8 @@
     2. du calculateur  
   
 > ### Optimisation de l'importation:
-> Utilisation de diverses méthode de parallélisme .map_async .apply_async .map de la class Pool de la librairie python native multiprocessing.    
+> Utilisation de diverses méthodes de parallélisme .map_async .apply_async .map de la class Pool de la librairie python native multiprocessing.
+>    
 > stratégies en cours d'élaboration:  
 > - division en fichiers plus petits
 > - implémentation en un langage bas niveau comme Rust
