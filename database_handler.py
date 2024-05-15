@@ -7,7 +7,7 @@ import pandas as pd
 from sqlalchemy import Column, Float, MetaData, String, Table, create_engine, NullPool, text
 from sqlalchemy.orm import sessionmaker
 from connect_db import conn_alchemy_with_url, get_url, open_config
-from utils import get_data_types, spinner,input_source, create_table_from_dataframe
+from utils import get_data_types, spinner,input_source 
 
 
 
@@ -62,7 +62,13 @@ class DatabaseHandler:
             print("Disconnected from the database.")
 
     @staticmethod
-    def insert_data(chunk,table):
+    def _insert_data(chunk,table):
+        # This method is used to create a table directly with sql_alchemy using
+        # a raw SQL statement instead of using pandas features for this.
+        # It might have some advantages as it seems to free
+        # memory much earlier and at each iteration 
+        # but the query is harder to build. Another method uses pandas
+        # DataFrame.to_sql for that.
         print("checking for NaN values:\n")
 
         # Replace NaN values with None
@@ -85,14 +91,19 @@ class DatabaseHandler:
         print("Data inserted successfully.")
     
     def process_table_model(self):
+        # This method is used to import a .csv file to the DB and processing it
+        # by ajustable chunks.
+        # This allows true parallelism during the import process. It uses the
+        # _insert_data() staticmethod to execute SQL command instead of pandas
+        # Another method v
         self._generate_types()
-        self.create_table_model_from_csv()
+        self._create_table_model_from_csv()
         self.metadata = MetaData()
         # self.chunksize = input("enter chunksize:\n"
                                # "default chunksize is 500") or 500 
         self.chunksize = 20000
         table = self.table
-        filled_insert_data = partial(self.insert_data, table=table)
+        filled_insert_data = partial(self._insert_data, table=table)
         try:
             with pd.read_csv(self.csv_file_path,chunksize=int(self.chunksize)) as chunks:
                 with Pool() as pool:
@@ -100,7 +111,7 @@ class DatabaseHandler:
 
                    result = pool.map_async(filled_insert_data, chunks)
                    results = result.get()
-                print(results)
+                # print(results)
                 pool.join()
                 pool.close()
         except Exception as e:
@@ -202,7 +213,7 @@ class DatabaseHandler:
     def _process_single_file(self):
         # Process a .csv file sequentially using a simple call to 
         self.df = pd.read_csv(self.csv_file_path)
-        self.create_table_from_dataframe()
+        self._create_table_from_dataframe()
 
     def _write_chunk_to_sql(self, chunk, table_name, sql_engine):
         try:
@@ -213,7 +224,8 @@ class DatabaseHandler:
             print("Pandas DataFrame to_sql operation failed:", e)
 
     @staticmethod
-    # la fonction à passer comme argument de Pool 
+    # The function to pass to Pool.apply_async must be static, we can use map_
+    # async with partial functions to avoid this.
     def multiprocessing_import(chunk, tab_name, mode='append'):
         # We need an engine connection for each process
         url = get_url()
@@ -230,8 +242,8 @@ class DatabaseHandler:
         except Exception as e:
             print(e)
     
-    def create_table_from_dataframe(self):
-#the insert query schema is replace by pandas to_sql() method
+    def _create_table_from_dataframe(self):
+    # The table is created in the DB with pandas DataFrame.to_sql() method
         try:
             self.df.to_sql(self.table_name,self.sql_engine,
                            if_exists='replace',
@@ -243,7 +255,7 @@ class DatabaseHandler:
             print("an unexpected error occurred", e)
 
     
-    def create_table_model_from_csv(self):
+    def _create_table_model_from_csv(self):
         self._generate_types()
         self.metadata = MetaData()
         df = pd.read_csv(self.csv_file_path,nrows=1)
@@ -281,7 +293,7 @@ class DatabaseHandler:
                             mode='append')
                     result = pool.map_async(filled_multiprocessing,chunks)
                     results = result.get()
-                    print(results)
+                    # print(results)
                 except Exception as e:
                     print("Error in multiprocessing apply_async function", e)
             pool.close()
@@ -331,13 +343,13 @@ if __name__ == "__main__":
         print("Usage with arguments: python script.py <table_name> <csv_file_path>")
         table_name, csv_file_path, simple_mode = input_source()
     
-    elif len(sys.argv) <= 3:
+    elif len(sys.argv) <= 4:
         table_name = sys.argv[1]
         csv_file_path = sys.argv[2]
         print(":: multiprocessing mode import ::\n"
               "(add -f for small files and simpler import mode)")
-        if len(sys.argv) == 3:
-            if sys.argv[2] == '-f':
+        if len(sys.argv) == 4:
+            if sys.argv[3] == '-f':
                 print(":: simple import mode activated ::")
                 simple_mode = 'y' 
     else:
@@ -353,7 +365,9 @@ if __name__ == "__main__":
     # db_handler.init_queries()
     # db_handler.make_query(['Date','Temperature'])
     input('process csv?')
-    db_handler.process_table_model()
-    # db_handler.process_csv_file()
+    # We have two methods for this. you can comment this one 
+    # and uncomment the second one to try it, see comments on each method.
+    db_handler.process_csv_file()
+    # db_handler.process_table_model()
     db_handler.disconnect()
 
