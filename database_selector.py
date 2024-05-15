@@ -1,5 +1,6 @@
 from sqlalchemy import text
 import pandas as pd
+import math
 
 from database_handler import DatabaseHandler
 
@@ -14,16 +15,16 @@ class DatabaseSelector(DatabaseHandler):
         self.raw_formula_list = None 
         
 
-    def select_interval(self, start, end, column_name,
-                        source_table_name, new_table_name):
+    def select_interval(self, start, end, column_name, new_table_name):
         # select an interval of values and create a subtable containing only
         # the selected values.
         # The selection criteria consists in a starting point and an ending point
         # e.g for a Date column: start=2023-12-01 end=2023-12-31
         try:
             select_query = f"""
+                DROP TABLE IF EXISTS {new_table_name};
                 SELECT * INTO {new_table_name}
-                FROM {source_table_name}
+                FROM {self.table_name}
                 WHERE "{column_name}" >= '{start}'
                 AND "{column_name}" <= '{end}'
             """
@@ -52,15 +53,16 @@ class DatabaseSelector(DatabaseHandler):
         """
         self.raw_formula_list = [(f"{self.insert_column_name}",sql_code)]
 
-    def _python_formula(self,arg1,arg2):
+    def _python_formula(self,temperature,wind_speed,rel_humidity):
         # Private method, should not be use directly
         # Here we can use python modules and functions to perform more advanced
         # calculations, this will feed the public method  
         # insert_variables_from_python_formula() to perform calculation on each
         # row.
         self.insert_column_name = 'python_calc'
-        if arg1 and arg2:
-            value = round(arg1 * arg2,2)
+        if rel_humidity and wind_speed and temperature:
+            result = -2.7 * (1 - (rel_humidity / 100)) * (5.0 * math.sqrt(max(wind_speed, 0)) - 0.1) + temperature
+            value = round(result,2)
         else:
             value = None
 
@@ -114,7 +116,9 @@ class DatabaseSelector(DatabaseHandler):
         df = pd.read_sql_table(self.table_name, self.sql_engine)
         values = []
         for _,row in df.iterrows():
-            value = self._python_formula(row[columns[0]],row[columns[1]])
+            value = self._python_formula(row[columns[0]],# Temperature
+                                         row[columns[1]],# wind_speed
+                                         row[columns[2]])# rel_humidity
             values += [value]
         df[self.insert_column_name] = values
         print(f""":: Inserting new column ::\n
