@@ -69,20 +69,20 @@
 
 ## C.  Exemple de Scénario d'utilisation de nos Classes  
 
-Le fichier main.py peut être lancé avec des arguments, si ce n'est pas le cas une série de prompt demandera:
+Le fichier main.py peut être lancé avec des arguments, si ce n'est pas le cas une série de prompt demandera:  
     - le nom du tableau (selon le scénario il s'agit d'un nom de tableau existant ou du nom de tableau à créer dans la base de données à partir du fichier à importer)  
     - si c'est le cas, le nom du fichier .csv que l'on désire importer dans la BD  
     - éventuellement un flag -f permet de préciser une méthode d'importation simple, l'absence de flag vaut pour une importation utilisant le parallèlisme  
 
-`python main.py [nom_du_tableau] [path_to_csv_file] [-f]`
+`python main.py [nom_du_tableau] [path_to_csv_file] [-f]`  
 
-### type de scénario imaginé:
+### type de scénario imaginé:  
 
-- un tableau doit être importé à partir du fichier data/meteo_data.csv,
-- certaines données abbérantes doivent être filtré et/ou un intervalle de temps doit être spécifié,
-- une nouvelle variable appelée python_calc* doit être inséré dans un tableau pour être représentée en fonction du temps
-  > * il s'agit dans le scénario du calcul de la température ressentie qui est une fonction de la température, de la vitesse du vent et de l'humidité relative.
-- un fichier .json doit ensuite être généré à partir de ces données de prévisualisation en vue d'une utilisation future dans un autre contexte.
+- un tableau doit être importé à partir du fichier data/meteo_data.csv,  
+- certaines données abbérantes doivent être filtré et/ou un intervalle de temps doit être spécifié,  
+- une nouvelle variable appelée python_calc* doit être inséré dans un tableau pour être représentée en fonction du temps  
+  > * il s'agit dans le scénario du calcul de la température ressentie qui est une fonction de la température, de la vitesse du vent et de l'humidité relative.  
+- un fichier .json doit ensuite être généré à partir de ces données de prévisualisation en vue d'une utilisation future dans un autre contexte.  
 
 ## D. Utilisation indépendante des différents scripts
 
