@@ -1,135 +1,139 @@
 
-# Heliocity : défi backend
+# Heliocity: Backend Challenge
 
-## Description des diverses fonctionnalités
+## Description of Various Functionalities
 
-> ### 0a. Le fichier `main.py` montre un aperçu d'un scénario possible (cf. C. ci-dessous) combinant toutes les fonctionnalités décrites plus bas.
+> ### 0a. The `main.py` file provides an overview of a possible scenario (see section C below) combining all described functionalities.
 
-> ### 0b. Le fichier `tests.py` permet de lancer les tests des différentes fonctionnalités
+> ### 0b. The `tests.py` file allows running tests for different functionalities.
 
-### 1. Le fichier `database_handler.py` avec la classe `DatabaseHandler` et sa méthode `process_csv_file()` 
+### 1. The `database_handler.py` file with the `DatabaseHandler` class and its `process_csv_file()` method
 
-- permet d'importer vers la base de données les fichiers `.csv` :
+- Imports `.csv` files into the database:
 
-    1. de l'API météo  
+    1. From the weather API
+    2. From the calculator
 
-    2. du calculateur  
-  
-> ### Optimisation de l'importation:
-> Utilisation de diverses méthodes de parallélisme `map_async` `apply_async` `map` de la class `Pool` de la librairie python native `multiprocessing`.
+> ### Import Optimization:
+> Uses various parallelism methods (`map_async`, `apply_async`, `map`) from Python's native `multiprocessing.Pool` class.
 >    
-> stratégies en cours d'élaboration:  
-> - division en fichiers plus petits
-> - implémentation en un langage bas niveau comme Rust
+> Strategies under development:
+> - Splitting into smaller files
+> - Implementation in a low-level language like Rust
 
-### 2. Le fichier `database_selector.py` et sa classe associée `DatabaseSelector` et ses différentes méthodes  
+### 2. The `database_selector.py` file and its associated `DatabaseSelector` class with various methods
 
-- permet de ramener un fichier météo d'un pas de temps de 5 min au pas de temps de 15 min du calculateur 
-> à venir: spécification dynamique du pas de temps initial et du pas de temps d'arrivée
+- Adjusts weather data from a 5-minute to a 15-minute time step using the calculator.
+  
+> Upcoming features:
+> - Dynamic specification of initial and target time steps
+> - Creates SQL sub-tables containing the selected data range (time range, temperature, etc.) generated from the original table.
 
-- permet la création de sous tableaux sql contenant la sélection demandée (plage de temps, température,...) généré à partir du tableau original.
+### 3. The `json_generator.py` file and its associated `JSONGenerator` class
 
-### 3. Le fichier `json_generator.py` et sa classe associée `JSONGenerator`
-
-- permet la manipulation des données de la DB en vue de la génération d'un fichier `.json` pour la visualisation
-- permet aussi une prévisualisation des données avec possibilité de filtrage des valeurs abérrantes.
+- Manipulates database data to generate a `.json` file for visualization.
+- Provides data preview with the option to filter out aberrant values.
 
 # Getting Started
 
-## A. pré-requis:  
+## Create a Virtual Environment
 
-> indication pour un environnement Linux
+### A. Prerequisites
 
-- un server postgresql configuré et démarré 
+> Guidelines for a Linux environment
 
-- la création et la configuration d'une nouvelle base de données
+- Configured and running PostgreSQL server.
+- Creation and configuration of a new database.
+- Edit the `config.json` file with necessary parameters for connecting to the database.
 
-- l'édition du fichier `config.json` avec les paramètres nécessaires en vue de la connexion à la base de données.
+### B. Installation
 
-## B. installation:
+#### Clone files from the Git repo:
 
-### Cloner les fichiers depuis le repo git:
+```bash
+git clone https://github.com/DevprojectEkla/HelioCity
+cd HelioCity
 
-`git clone https://github.com/DevprojectEkla/HelioCity`  
-`cd HelioCity`
+### Create a Virtual Environment:
 
-### Créer un environnement virtuel:
+```bash
+python -m venv env
+```
 
-`python -m venv env`
+### Activate the Virtual Environment:
 
-### Entrer dans l'environnement virtuel
+```bash
+source env/bin/activate  # On Linux
+```
 
-`activate`
+### Install Dependencies:
 
-### Installation des dépendances:
+```bash
+pip install -r requirements.txt
+```
 
-`pip install -r requirements.txt`
+### (Optional) Create a `data/` Folder for Your `.csv` Files:
 
-### (optionnel) Créer un dossier `data/` dans lequel vous mettrez vos fichies `.csv`
+```bash
+mkdir data
+```
 
-`mkdir data`  
+## C. Usage Scenario Example Using Our Classes
 
-## C.  Exemple de Scénario d'utilisation de nos Classes  
+The `main.py` file can be launched with arguments; otherwise, a series of prompts will ask for:
 
-Le fichier main.py peut être lancé avec des arguments, si ce n'est pas le cas une série de prompt demandera:  
-    - le nom du tableau (selon le scénario il s'agit d'un nom de tableau existant ou du nom de tableau à créer dans la base de données à partir du fichier à importer)  
-    - si c'est le cas, le nom du fichier .csv que l'on désire importer dans la BD  
-    - éventuellement un flag -f permet de préciser une méthode d'importation simple, l'absence de flag vaut pour une importation utilisant le parallèlisme  
+- The table name (either an existing table name or the name for a new table to be created in the database from the imported file).
+- If applicable, the name of the `.csv` file to import into the database.
+- Optionally, use the `-f` flag to specify a simple import method; absence of the flag defaults to a parallelism-based import.
 
-`python main.py [nom_du_tableau] [path_to_csv_file] [-f]`  
+```bash
+python main.py [table_name] [path_to_csv_file] [-f]
+```
 
-### type de scénario imaginé:  
+### Imagined Scenario Type:
 
-- un tableau doit être importé à partir du fichier `./data/meteo_data.csv` en pré-traitement, ou `./data/test_helio.csv` en post-traitement.  
-- certaines données abbérantes doivent être filtrées et/ou un intervalle de temps doit être spécifié,  
-- une nouvelle variable appelée `python_calc`* doit être insérée dans un tableau pour être représentée en fonction du temps  
-  > &#42; il s'agit dans le scénario du calcul de prétraitement de la température ressentie qui est une fonction de la température, de la vitesse du vent et de l'humidité relative.  
-Dans le scénario de post-traitement la grandeur est un calcul fictif pour les tests (à ajuster avec une formule pertinente).  
-- un fichier `.json` doit ensuite être généré à partir de ces données de prévisualisation en vue d'une utilisation future dans un autre contexte.  
+- Import a table from `./data/meteo_data.csv` in preprocessing or `./data/test_helio.csv` in post-processing.
+- Filter out aberrant data and specify a time interval.
+- Insert a new variable called `python_calc`* into a table for time-based representation.
+> &#42; In this scenario, it involves preprocessing wind chill temperature as a function of temperature, wind speed, and relative humidity. In post-processing, it's a test calculation (to be adjusted with a relevant formula).
+- Generate a `.json` file from this preview data for future use in another context.
 
-## D. Utilisation indépendante des différents scripts
+## D. Independent Usage of Different Scripts
 
-### Importation des données csv vers postgresql
+### Importing CSV Data into PostgreSQL
 
-#### Lancer le fichier `database_handler.py`:
+#### Run `database_handler.py`:
 
-`python database_handler.py`
+```bash
+python database_handler.py
+```
 
-Une série de trois prompts vous demandera:
+You will be prompted for:
 
-- le nom du nouveau tableau à créer  
-ex: `meteo_data` (c'est la valeur par défaut)  
+- The name of the new table to create (default: `meteo_data`).
+- The path to the `.csv` data file (default: `./data/meteo_data.csv`).
+- Specify data origin (weather or calculator); calculator column processing takes place in adjustable portions of the number of lines answered `'y'` if it's a large file. 'n' or '' in the case of a large file.
 
-- le chemin d'accès vers le fichier de données au format `.csv`  
-ex `./data/meteo_data.csv` (c'est la valeur par défaut)  
+> Warning: Importing large `.csv` files from the calculator can take some time depending on the computer's memory capabilities. Adjust the value of the number of lines per portion to available memory.
 
-- une spécification de l'origine des données (météo ou calculateur); le traitement des colonnes du calculateur a lieu par portion ajustable de nombre de lignes) répondre `'y'` s'il s'agit d'un fichier de données peut volumineux et 'n' ou '' dans le cas d'un fichier volumineux.   
-> Avertissement: L'importation des fichiers .csv volumineux provenant du calculateur peut prendre un certain temps selon les capacités mémoire de l'ordinateur. Il est nécessaire d'ajuster la valeur du nombre de lignes par portion à la mémoire disponible. 
+### Post and Pre-Processing Data Manipulations
 
-### Manipulations de données Post et Pré traitement:
+#### Using `DatabaseSelector` Class from `database_selector.py`:
 
-#### La classe `DatabaseSelector` de `database_selector.py`:  
+Data manipulations can be performed using the `DatabaseSelector` class to create new tables in the database. It allows:
 
-Les manipulations de données peuvent être effectuée via la classe `DatabaseSelector` pour générer de nouveau tableau dans la base de données.  
-Elle permet:  
-    - la création de sous-taleaux par intervalle d'intérêt  
-    - l'aggrégation des données météo au pas du calculateur  
-    - l'insertion de variables calculées à partir des variables d'un tableau existant  
+- Creating sub-tables by interval of interest.
+- Aggregating weather data at the calculator's timestep.
+- Inserting calculated variables from existing table variables.
 
+For a test, simply run the command:
 
-pour un test lancer simplement la commande:  
+```bash
+python database_selector.py
+```
 
-`python database_selector.py`
+Follow the instructions...
 
-suivre les instructions...
+#### Using `JSONGenerator` Class from `json_generator.py`:
 
-#### La classe `JSONGenerator` de `json_generator`:
-
-Cette classe n'accède qu'en lecture à la base de donnée elle n'y écrit rien. Elle permet de manipuler facilement les données dans des dataframe
-pour une prévisualisation en graph des données à importer en format .json
-
-pour un exemple lancer:
-
-`python json_generator.py`
-
-
+This class only reads from the database and does not write to it. It facilitates easy manipulation of data in dataframes for visualization and is used to generate a `.json` format.
