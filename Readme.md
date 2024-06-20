@@ -23,7 +23,7 @@
 
 ### 2. The `database_selector.py` file and its associated `DatabaseSelector` class with various methods
 
-- Adjusts weather data from a 5-minute to a 15-minute time step using the calculator.
+- Adjusts weather data from a 5-minute to a 15-minute time step to ajust to the calculator's step.
   
 > Upcoming features:
 > - Dynamic specification of initial and target time steps
@@ -53,7 +53,7 @@
 ```bash
 git clone https://github.com/DevprojectEkla/HelioCity
 cd HelioCity
-
+```
 ### Create a Virtual Environment:
 
 ```bash
